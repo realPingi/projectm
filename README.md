@@ -1,0 +1,21 @@
+# License
+
+![License: Proprietary](https://img.shields.io/badge/license-Proprietary-red.svg)
+
+Copyright (c) 2025 **Kerem Yalcinkaya**.  
+All rights reserved.
+
+This software and its associated documentation files (the "Software") are the
+exclusive property of Kerem Yalcinkaya.
+
+Unauthorized copying, modification, distribution, or use of this software, via
+any medium, is strictly prohibited unless prior written permission is obtained
+from the copyright holder.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
