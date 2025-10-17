@@ -1,0 +1,42 @@
+name: projectm-game
+main: com.yalcinkaya.ctf.CTF
+version: 1.0
+api-version: 1.21
+depend: [ TAB ]
+
+commands:
+  kit:
+    description: Open kit selection.
+    usage: /<command>
+  setkit:
+    description: Set your kit.
+    usage: /<command> <kit>
+    permission: bukkit.command.op.name
+  setcounter:
+    description: Set kit counter.
+    usage: /<command> <counterName> <count>
+    permission: bukkit.command.op.name
+  setflag:
+    description: Set flag status.
+    usage: /<command> <teamColor> <flagLocation> <captureStatus>
+    permission: bukkit.command.op.name
+  settimer:
+    description: Set timer.
+    usage: /<command> <time>
+    permission: bukkit.command.op.name
+  energy:
+    description: Get energy.
+    usage: /<command>
+    permission: bukkit.command.op.name
+  forcewin:
+    description: Force win.
+    usage: /<command> <teamColor>
+    permission: bukkit.command.op.name
+  swapteam:
+    description: Swap team.
+    usage: /<command>
+    permission: bukkit.command.op.name
+  togglespec:
+    description: Toggle spectator mode.
+    usage: /<command>
+    permission: bukkit.command.op.name
