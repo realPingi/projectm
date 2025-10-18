@@ -11,17 +11,15 @@ import java.util.List;
 
 public class QueueUtil {
 
-    public static final ChatColor QUEUE_COLOR = ChatColor.LIGHT_PURPLE;
-
     public static <T extends Queueable> void addQueueItem(Menu menu, int slot, Queue<T> queue) {
         menu.setItem(slot, queue.getIcon(), queue::accept);
     }
 
     public static ItemStack buildIcon(Queue queue) {
-        return new ItemBuilder(queue.getDisplayMaterial())
-                .name(QUEUE_COLOR + queue.getName())
+        return ItemBuilder.of(queue.getDisplayMaterial())
+                .name("<italic:false><light_purple>" + queue.getName() + "<light_purple>")
                 .amount(queue.getIngame() + queue.getQueuedPlayers())
-                //.lore(buildDescription(queue))
+                .lore(buildDescription(queue))
                 .build();
     }
 
@@ -32,11 +30,10 @@ public class QueueUtil {
         int ingame = queue.getIngame();
 
         desc.add("");
-        desc.add(ChatColor.GRAY + "Ingame" + " >> " + ChatColor.AQUA + ingame);
-        desc.add(ChatColor.GRAY + "Queuing" + " >> " + ChatColor.AQUA + queuing);
+        desc.add("<italic:false><gray>Queuing" + " >> <gray><light_purple>" + queuing + "<light_purple>");
         desc.add("");
-        desc.add(ChatColor.WHITE + "Left" + ChatColor.GRAY + " click to queue");
-        desc.add(ChatColor.WHITE + "Shift" + ChatColor.GRAY + " click to leave queue");
+        desc.add("<italic:false><light_purple>Left<light_purple> <gray>click to queue<gray>");
+        desc.add("<italic:false><light_purple>Shift<light_purple> <gray>click to leave queue<gray>");
         return desc;
     }
 

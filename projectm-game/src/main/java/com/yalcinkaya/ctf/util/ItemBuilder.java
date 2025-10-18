@@ -16,16 +16,10 @@ public class ItemBuilder {
 
     public ItemBuilder(Material material) {
         this.itemStack = new ItemStack(material);
-        if (!itemStack.hasItemMeta()) {
-            itemStack.setItemMeta(Bukkit.getItemFactory().getItemMeta(material));
-        }
     }
 
     public ItemBuilder(ItemStack itemStack) {
         this.itemStack = itemStack;
-        if (!itemStack.hasItemMeta()) {
-            itemStack.setItemMeta(Bukkit.getItemFactory().getItemMeta(itemStack.getType()));
-        }
     }
 
     public ItemBuilder name(String string) {

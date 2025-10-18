@@ -1,5 +1,6 @@
 package com.yalcinkaya.lobby;
 
+import com.yalcinkaya.lobby.commands.ReconnectCommand;
 import com.yalcinkaya.lobby.listener.MenuListener;
 import com.yalcinkaya.lobby.listener.PlayerListener;
 import com.yalcinkaya.lobby.menu.MenuManager;
@@ -49,6 +50,9 @@ public class Lobby extends JavaPlugin {
 
         pluginManager.registerEvents(playerListener, this);
         pluginManager.registerEvents(menuListener, this);
+
+        this.getCommand("reconnect").setExecutor(new ReconnectCommand());
+
 
         queueManager.loadQueues();
         menuManager.loadMenus();

@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.queue;
 
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.menu.Menu;
+import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.MessageType;
@@ -97,7 +98,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param matches The {@link Queueable}s that were previously matched.
      */
     public void onMatchFound(Set<T> matches) {
-        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.SUCCESS, getName(), ChatColor.GRAY + " match found."))));
+        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Match found: ", getName()))));
     }
 
     ;
@@ -184,7 +185,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 getQueueable(sender).getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
                 unqueue(getQueueable(sender));
                 if (menu != null) {
-                    LobbyUtil.reopenMenu(sender);
+                    player.closeInventory();
                 }
             } else {
                 sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued for ", getName(), ChatColor.GRAY + "."));
@@ -195,10 +196,16 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 if (queueable == null) {
                     return;
                 }
+                MatchLookupService lookup = new MatchLookupService();
+                if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInAnyMatch)) {
+                    player.closeInventory();
+                    sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
+                    return;
+                }
                 if (queue(queueable)) {
                     queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
                     if (sender.getMenu() != null) {
-                        LobbyUtil.reopenMenu(sender);
+                        player.closeInventory();
                     }
                 }
             } else {

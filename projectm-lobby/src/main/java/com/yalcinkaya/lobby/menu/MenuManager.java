@@ -14,9 +14,9 @@ import java.util.HashMap;
 
 public class MenuManager {
 
-    private final Menu queueMenu = new Menu(27, ChatColor.GOLD + "Queues");
+    private final Menu queueMenu = new Menu(27, ChatColor.LIGHT_PURPLE + "Queues");
     @Getter
-    private final ItemStack queueMenuKey = new ItemBuilder(Material.COMPASS).name(ChatColor.GOLD + "Queue").build();
+    private final ItemStack queueMenuKey = ItemBuilder.of(Material.COMPASS).name("<italic:false><light_purple>Queue<light_purple>").build();
     private final HashMap<ItemStack, Menu> menus = new HashMap<>();
 
     public void loadMenus() {

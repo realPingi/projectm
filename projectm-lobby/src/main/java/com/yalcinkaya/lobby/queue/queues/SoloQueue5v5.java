@@ -16,7 +16,7 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
     @Override
     public Set<LobbyUser> findMatch() {
         int neededPlayers = 2 * MIN;
-        if (getQueued() >= 1) {
+        if (getQueued() >= neededPlayers) {
             return queue.stream().limit(neededPlayers).collect(Collectors.toSet());
         }
         return null;
@@ -45,7 +45,7 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
 
     @Override
     public Material getDisplayMaterial() {
-        return Material.DIAMOND_SWORD;
+        return Material.BLACK_BANNER;
     }
 
     @Override

@@ -1,35 +1,40 @@
-// simple-orchestrator.js (stateless, port-range + auto-clean)
+// simple-orchestrator.js (stateless, port-range + /matches + robust cleanup)
 const http = require('http');
 const { spawnSync, spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 
-const PORT = Number(process.env.ORCH_PORT || 4000);
-const HOST = process.env.ORCH_HOST || '0.0.0.0';
+const PORT  = Number(process.env.ORCH_PORT || 4000);
+const HOST  = process.env.ORCH_HOST || '0.0.0.0';
 const DOCKER = process.env.DOCKER_BIN || '/usr/bin/docker';
 
 const PORT_MIN = 25566;
 const PORT_MAX = 25569;
-const MAX_MATCHES = 4;              // via running containers (label)
+const MAX_MATCHES = 4;                  // limit active matches
 const RUN_TIMEOUT_MS = 10_000;
 const LABEL = 'projectm=game';
 
-/* ───────── Helpers ───────── */
+/* ───────── helpers ───────── */
 
-function sh(cmd, args, opts={}) {
+function sh(cmd, args, opts = {}) {
   const res = spawnSync(cmd, args, { encoding: 'utf8', ...opts });
   if (res.error) throw res.error;
-  return { code: res.status ?? 0, out: (res.stdout||'').trim(), err: (res.stderr||'').trim() };
+  return { code: res.status ?? 0, out: (res.stdout || '').trim(), err: (res.stderr || '').trim() };
 }
 
-function listGameContainers(all=false) {
-  // returns array of {id,name,ports,status}
+function dockerInspect(idOrName) {
+  const { code, out } = sh(DOCKER, ['inspect', idOrName]);
+  if (code !== 0 || !out) return null;
+  try { return JSON.parse(out)[0]; } catch { return null; }
+}
+
+function listGameContainers(all = false) {
   const args = ['ps', '--format', '{{.ID}}|{{.Names}}|{{.Ports}}|{{.Status}}', '--filter', `label=${LABEL}`];
   if (all) args.splice(1, 0, '-a');
   const { code, out } = sh(DOCKER, args);
   if (code !== 0 || !out) return [];
-  return out.split('\n').map(l => {
-    const [id,name,ports,status] = l.split('|');
-    return { id, name, ports: (ports||''), status: (status||'') };
+  return out.split('\n').filter(Boolean).map(l => {
+    const [id, name, ports, status] = l.split('|');
+    return { id, name, ports: (ports || ''), status: (status || '') };
   });
 }
 
@@ -37,8 +42,8 @@ function usedHostPorts() {
   const arr = listGameContainers(true);
   const ports = new Set();
   for (const c of arr) {
-    // example c.ports: "0.0.0.0:25566->25565/tcp"
-    const m = c.ports.match(/:(\d+)->25565\/tcp/);
+    // examples: "0.0.0.0:25566->25565/tcp" or ":::25566->25565/tcp"
+    const m = (c.ports || '').match(/:(\d+)->25565\/tcp/);
     if (m) ports.add(Number(m[1]));
   }
   return ports;
@@ -60,7 +65,9 @@ function rmContainer(nameOrId) {
   try {
     sh(DOCKER, ['rm', '-f', nameOrId]);
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 function resolveByPort(port) {
@@ -68,7 +75,65 @@ function resolveByPort(port) {
   return all.find(c => (c.ports || '').includes(`:${port}->25565`));
 }
 
-/* ───────── Core ops ───────── */
+/* ───────── robust cleanup ───────── */
+
+function listMatchesWithTeams() {
+  const rows = listGameContainers(true);
+  const result = [];
+  for (const c of rows) {
+    const ins = dockerInspect(c.id);
+    if (!ins) continue;
+
+    // Host-Port (25565 im Container)
+    let hostPort = null;
+    const p = ins.NetworkSettings?.Ports?.['25565/tcp'];
+    if (Array.isArray(p) && p.length > 0 && p[0]?.HostPort) {
+      hostPort = Number(p[0].HostPort);
+    }
+
+    // Teams Base64 aus Env lesen
+    let teamsB64 = null;
+    for (const kv of (ins.Config?.Env || [])) {
+      if (kv.startsWith('TEAMS_CONFIG_B64=')) {
+        teamsB64 = kv.substring('TEAMS_CONFIG_B64='.length);
+        break;
+      }
+    }
+
+    if (hostPort) {
+      result.push({ containerId: c.id, name: c.name, port: hostPort, teamsConfigBase64: teamsB64 });
+    }
+  }
+  return result;
+}
+
+// every 30s remove dead containers
+setInterval(() => {
+  try {
+    const all = listGameContainers(true);
+    for (const c of all) {
+      const ins = dockerInspect(c.id);
+      const running = !!(ins && ins.State && ins.State.Running);
+      const st = (c.status || '').toLowerCase();
+
+      const shouldRemove =
+        !running ||
+        st.includes('exited') ||
+        st.includes('dead') ||
+        st.includes('removing') ||
+        st.includes('created');
+
+      if (shouldRemove) {
+        rmContainer(c.id);
+        // console.log(`[cleanup] removed ${c.name} (${c.status})`);
+      }
+    }
+  } catch {
+    // ignore cleanup errors
+  }
+}, 30_000);
+
+/* ───────── core ops ───────── */
 
 function startGameServer({ mapId, teamsConfigBase64 }) {
   return new Promise((resolve, reject) => {
@@ -82,7 +147,7 @@ function startGameServer({ mapId, teamsConfigBase64 }) {
       const name = `match-${matchId}`;
 
       const args = [
-        'run','-d',
+        'run', '-d',
         '--label', LABEL,
         '--name', name,
         '-p', `${port}:25565`,
@@ -92,7 +157,7 @@ function startGameServer({ mapId, teamsConfigBase64 }) {
         'realpingi/game:ready'
       ];
 
-      const child = spawn(DOCKER, args, { stdio: ['ignore','pipe','pipe'] });
+      const child = spawn(DOCKER, args, { stdio: ['ignore', 'pipe', 'pipe'] });
       let stdout = '', stderr = '';
       let timedOut = false;
       const t = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, RUN_TIMEOUT_MS);
@@ -121,39 +186,28 @@ function endGame({ name, port }) {
   return false;
 }
 
-/* ───────── Auto-clean loop ─────────
-   Entfernt alle mit Label markierten Container,
-   die nicht mehr laufen (exited, dead). Jede 30s.
-*/
-setInterval(() => {
-  try {
-    const all = listGameContainers(true);
-    for (const c of all) {
-      const st = (c.status || '').toLowerCase();
-      if (st.startsWith('exited') || st.includes('dead') || st.includes('removing') || st.includes('created')) {
-        rmContainer(c.name);
-        // optional: console.log(`[cleanup] removed ${c.name} (${st})`);
-      }
-    }
-  } catch {/* ignore */}
-}, 30_000);
-
-/* ───────── HTTP API ───────── */
+/* ───────── http api ───────── */
 
 const server = http.createServer(async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
   try {
     if (req.method === 'GET' && req.url === '/health') {
-      const used = Array.from(usedHostPorts()).sort((a,b)=>a-b);
+      const usedSet = usedHostPorts();
+      const used = Array.from(usedSet).sort((a,b)=>a-b);
       const free = [];
-      for (let p = PORT_MIN; p <= PORT_MAX; p++) if (!used.includes(p)) free.push(p);
+      for (let p = PORT_MIN; p <= PORT_MAX; p++) if (!usedSet.has(p)) free.push(p);
       const running = runningMatchesCount();
-      res.writeHead(200, {'content-type':'application/json'});
-      return res.end(JSON.stringify({ ok:true, running, used, free, max: MAX_MATCHES }));
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, running, used, free, max: MAX_MATCHES }));
+    }
+
+    if (req.method === 'GET' && req.url === '/matches') {
+      const matches = listMatchesWithTeams();
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, matches }));
     }
 
     if (req.method === 'POST' && req.url === '/create-match') {
@@ -162,11 +216,11 @@ const server = http.createServer(async (req, res) => {
         try {
           const { mapId, teamsConfigBase64 } = JSON.parse(body || '{}');
           const { matchId, name, gamePort, containerId } = await startGameServer({ mapId, teamsConfigBase64 });
-          res.writeHead(201, {'content-type':'application/json'});
-          res.end(JSON.stringify({ ok:true, matchId, name, gamePort, containerId }));
+          res.writeHead(201, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, matchId, name, gamePort, containerId }));
         } catch (e) {
-          res.writeHead(400, {'content-type':'application/json'});
-          res.end(JSON.stringify({ ok:false, error: e.message }));
+          res.writeHead(400, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: e.message }));
         }
       });
       return;
@@ -178,22 +232,24 @@ const server = http.createServer(async (req, res) => {
         try {
           const { name, port } = JSON.parse(body || '{}');
           const ok = endGame({ name, port });
-          res.writeHead(ok ? 200 : 404, {'content-type':'application/json'});
+          res.writeHead(ok ? 200 : 404, { 'content-type': 'application/json' });
           res.end(JSON.stringify({ ok }));
         } catch (e) {
-          res.writeHead(400, {'content-type':'application/json'});
-          res.end(JSON.stringify({ ok:false, error: e.message }));
+          res.writeHead(400, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: e.message }));
         }
       });
       return;
     }
 
-    res.writeHead(404, {'content-type':'application/json'});
-    res.end(JSON.stringify({ ok:false, error:'Not Found' }));
+    res.writeHead(404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'Not Found' }));
   } catch (e) {
-    res.writeHead(500, {'content-type':'application/json'});
-    res.end(JSON.stringify({ ok:false, error: e.message }));
+    res.writeHead(500, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: e.message }));
   }
 });
 
-server.listen(PORT, HOST, () => console.log(`[orchestrator] listening on ${HOST}:${PORT} (range ${PORT_MIN}-${PORT_MAX})`));
+server.listen(PORT, HOST, () =>
+  console.log(`[orchestrator] listening on ${HOST}:${PORT} (range ${PORT_MIN}-${PORT_MAX})`)
+);
