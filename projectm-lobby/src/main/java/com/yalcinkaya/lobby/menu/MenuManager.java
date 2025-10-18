@@ -1,6 +1,7 @@
 package com.yalcinkaya.lobby.menu;
 
 import com.yalcinkaya.lobby.Lobby;
+import com.yalcinkaya.lobby.menu.menus.QueueMenu;
 import com.yalcinkaya.lobby.util.ItemBuilder;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.QueueUtil;
@@ -14,14 +15,12 @@ import java.util.HashMap;
 
 public class MenuManager {
 
-    private final Menu queueMenu = new Menu(27, ChatColor.LIGHT_PURPLE + "Queues");
+    private final QueueMenu queueMenu = new QueueMenu(27, "Queues");
     @Getter
     private final ItemStack queueMenuKey = ItemBuilder.of(Material.COMPASS).name("<italic:false><light_purple>Queue<light_purple>").build();
     private final HashMap<ItemStack, Menu> menus = new HashMap<>();
 
     public void loadMenus() {
-        // queue menu
-        QueueUtil.addQueueItem(queueMenu, LobbyUtil.slotFromRowCol(1, 4), Lobby.getInstance().getQueueManager().getSoloQueue5v5());
         menus.put(queueMenuKey, queueMenu);
     }
 

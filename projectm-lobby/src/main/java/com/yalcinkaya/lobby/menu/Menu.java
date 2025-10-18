@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.function.BiConsumer;
 
 @Data
-public class Menu {
+public abstract class Menu {
 
     private Inventory inventory;
     private HashMap<Integer, InteractiveItem> interactiveItems = new HashMap<>();
@@ -34,9 +34,12 @@ public class Menu {
     public void open(LobbyUser user) {
         Player player = LobbyUtil.getPlayer(user);
         if (player != null && player.isOnline()) {
+            refresh();
             player.openInventory(inventory);
             user.setMenu(this);
         }
     }
+
+    public abstract void refresh();
 
 }

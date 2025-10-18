@@ -39,7 +39,7 @@ public class MenuListener implements Listener {
         ItemStack item = event.getItem();
         Action action = event.getAction();
         if (item != null && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) && menuManager.isKey(item)) {
-            event.getPlayer().openInventory(menuManager.getMenu(item).getInventory());
+            menuManager.getMenu(item).open(LobbyUtil.getUser(event.getPlayer()));
             event.setCancelled(true);
         }
     }

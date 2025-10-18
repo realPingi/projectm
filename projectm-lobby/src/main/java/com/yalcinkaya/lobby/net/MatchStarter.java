@@ -73,7 +73,7 @@ public class MatchStarter {
                         cancel();
                     }
                 }
-            }.createTimer(20, 20, 20 * 40);
+            }.createTimer(20 * 3, 20 * 3, 20);
 
         } catch (Exception e) {
             Lobby.getInstance().getLogger().severe("Failed to start match: " + e.getMessage());
