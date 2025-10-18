@@ -318,7 +318,8 @@ public class CTFUtil {
     public static void loadMap() {
         String mapId = System.getenv("MAP_ID");
         CTF.getInstance().setMap(CTFMap.getFromId(mapId).getMap());
-        loadSchematic("/maps/" + mapId + ".schem");
+        Path p = Paths.get("maps", mapId + ".schem");
+        loadSchematic(p.toString());
     }
 
     public static void loadSchematic(String schematicPath) {
