@@ -3,7 +3,6 @@ package com.yalcinkaya.lobby.queue.queues;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.Queue;
-import com.yalcinkaya.lobby.queue.queueables.SingleQueueable;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import org.bukkit.Material;
 
@@ -28,10 +27,10 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
         List<UUID> blue = new ArrayList<>();
         List<UUID> red = new ArrayList<>();
 
-        List<SingleQueueable> shuffled = new ArrayList<>(matches);
+        List<LobbyUser> shuffled = new ArrayList<>(matches);
         Collections.shuffle(shuffled);
         for (int i = 0; i < shuffled.size(); i++) {
-            UUID match = shuffled.get(i).getUUID();
+            UUID match = shuffled.get(i).getUuid();
             if (i % 2 == 0) {
                 blue.add(match);
             } else {

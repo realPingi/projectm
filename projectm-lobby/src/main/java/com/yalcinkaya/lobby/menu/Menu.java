@@ -1,5 +1,6 @@
 package com.yalcinkaya.lobby.menu;
 
+import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import lombok.Data;
@@ -37,6 +38,15 @@ public abstract class Menu {
             refresh();
             player.openInventory(inventory);
             user.setMenu(this);
+        }
+    }
+
+    public void closeAndOpen(LobbyUser user) {
+        Player player = LobbyUtil.getPlayer(user);
+        if (player != null && player.isOnline()) {
+            player.closeInventory();
+            Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> open(user), 2);
+
         }
     }
 

@@ -24,7 +24,7 @@ public class LobbyUtil {
     }
 
     public static Player getPlayer(LobbyUser user) {
-        return Bukkit.getPlayer(user.getUUID());
+        return Bukkit.getPlayer(user.getUuid());
     }
 
     public static Player getPlayer(UUID uuid) {
@@ -51,16 +51,6 @@ public class LobbyUtil {
 
     public static void broadcastMessageForAll(MessageType messageType, String... strings) {
         Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(getLobbyMessage(messageType, strings)));
-    }
-
-    public static void reopenMenu(LobbyUser user) {
-        Player player = LobbyUtil.getPlayer(user);
-        if (player != null && player.isOnline()) {
-            Menu menu = user.getMenu();
-            player.closeInventory();
-            Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> menu.open(user), 1);
-
-        }
     }
 
     public static String wrap(String string, int lineLength) {

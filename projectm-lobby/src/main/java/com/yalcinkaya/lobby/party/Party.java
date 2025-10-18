@@ -18,7 +18,7 @@ public class Party implements Queueable {
     }
 
     public void addMember(LobbyUser user) {
-        addMember(user.getUUID());
+        addMember(user.getUuid());
     }
 
     public void addMember(UUID uuid) {
@@ -26,16 +26,11 @@ public class Party implements Queueable {
     }
 
     public void removeMember(LobbyUser user) {
-        removeMember(user.getUUID());
+        removeMember(user.getUuid());
     }
 
     public void removeMember(UUID uuid) {
         members.remove(uuid);
-    }
-
-    @Override
-    public UUID getUUID() {
-        return partyId;
     }
 
     @Override

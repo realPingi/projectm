@@ -14,20 +14,12 @@ public class QueueManager {
     private final SoloQueue5v5 soloQueue5v5 = new SoloQueue5v5();
 
     public void loadQueues() {
-        openQueue(soloQueue5v5);
-    }
-
-    public void openQueue(Queue queue) {
-        registerQueue(queue);
-        queue.init();
+        registerQueue(soloQueue5v5);
     }
 
     public void registerQueue(Queue queue) {
         queues.put(queue.getIdentifier(), queue);
-    }
-
-    public boolean isLock(Queueable queueable) {
-        return queues.values().stream().anyMatch(queue -> queue.isQueued(queueable));
+        queue.init();
     }
 
     public void unqueue(LobbyUser user) {

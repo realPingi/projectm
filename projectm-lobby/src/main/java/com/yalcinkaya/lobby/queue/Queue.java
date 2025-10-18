@@ -63,9 +63,6 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         if (queueable == null) {
             return false;
         }
-        if (Lobby.getInstance().getQueueManager().isLock(queueable)) {
-            return false;
-        }
         return !isQueued(queueable) && queue.add(queueable);
     }
 
@@ -73,16 +70,13 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param queueable The {@link Queueable} to be unqueued.
      * @return true if <code>queueable</code> is unqueued.
      */
-    public boolean unqueue(Queueable queueable) {
-        return queueable != null && isQueued(queueable) && queue.remove(queue.stream().filter(q -> q.isSimilar(queueable)).findFirst().get());
+    public boolean unqueue(T queueable) {
+        if (queueable == null) return false;
+        return queue.removeIf(q -> q == queueable || q.isSimilar(queueable));
     }
 
     public boolean isQueued(Queueable queueable) {
-        return queueable != null && queue.stream().anyMatch(q -> q.isSimilar(queueable));
-    }
-
-    public boolean isQueued(UUID uuid) {
-        return queue.stream().anyMatch(q -> q.getUUIDs().contains(uuid));
+        return queueable != null && find(queueable) != null;
     }
 
     /**
@@ -101,8 +95,6 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Match found: ", getName()))));
     }
 
-    ;
-
     /**
      * Called when {@link Queue#findMatch()} returns null.
      */
@@ -110,20 +102,12 @@ public abstract class Queue<T extends Queueable> implements Runnable {
     }
 
     /**
-     * @param uuid {@link UUID}
-     * @return the {@link Queueable} containing <code>uuid</code>.
-     * @return the {@link Queueable} associated with <code>uuid</code>.
+     * @param queueable {@link Queueable}
+     * @return {@link Queueable}.
+     * @return the {@link Queueable} similiar to <code>queueable</code>.
      */
-    public T getQueueable(UUID uuid) {
-        return queue.stream().filter(q -> q.getUUID().equals(uuid)).findFirst().orElse(null);
-    }
-
-    /**
-     * @param user {@link LobbyUser}
-     * @return the {@link Queueable} containing <code>uuid</code>.
-     */
-    public T getQueueable(LobbyUser user) {
-        return queue.stream().filter(q -> q.getUUIDs().contains(user.getUUID())).findFirst().orElse(null);
+    public T find(Queueable queueable) {
+        return queue.stream().filter(q -> q.isSimilar(queueable)).findFirst().orElse(null);
     }
 
     /**
@@ -164,8 +148,6 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         return QueueUtil.buildIcon(this);
     }
 
-    ;
-
     /**
      * @return the name of this queue.
      */
@@ -181,17 +163,18 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         Player player = LobbyUtil.getPlayer(sender);
         Menu menu = sender.getMenu();
         if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
-            if (isQueued(sender.getUUID())) {
-                getQueueable(sender).getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
-                unqueue(getQueueable(sender));
+            if (isQueued(sender)) {
+                T queueable = find(sender);
+                unqueue(queueable);
+                queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
                 if (menu != null) {
-                    player.closeInventory();
+                    menu.closeAndOpen(sender);
                 }
             } else {
                 sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued for ", getName(), ChatColor.GRAY + "."));
             }
         } else {
-            if (!isQueued(sender.getUUID())) {
+            if (!isQueued(sender)) {
                 T queueable = queuebalize(sender);
                 if (queueable == null) {
                     return;
@@ -205,7 +188,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 if (queue(queueable)) {
                     queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
                     if (sender.getMenu() != null) {
-                        player.closeInventory();
+                        menu.closeAndOpen(sender);
                     }
                 }
             } else {

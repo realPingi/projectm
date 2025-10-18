@@ -2,15 +2,18 @@ package com.yalcinkaya.lobby.user;
 
 import com.yalcinkaya.lobby.menu.Menu;
 import com.yalcinkaya.lobby.party.Party;
-import com.yalcinkaya.lobby.queue.queueables.SingleQueueable;
+import com.yalcinkaya.lobby.queue.Queueable;
 import lombok.Data;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
-public class LobbyUser implements SingleQueueable {
+public class LobbyUser implements Queueable {
 
     private UUID uuid;
     private Party party;
@@ -28,7 +31,7 @@ public class LobbyUser implements SingleQueueable {
     }
 
     @Override
-    public UUID getUUID() {
-        return uuid;
+    public Set<UUID> getUUIDs() {
+        return new HashSet<>(Collections.singleton(uuid));
     }
 }
