@@ -31,15 +31,7 @@ public class AssignMatchCommand implements CommandExecutor {
             ctf.setMatchId(matchId);
             ctf.setMapId(mapId);
             ctf.setTeamJson(teamsB64);
-
-            Bukkit.getScheduler().runTask(CTF.getInstance(), () -> {
-                try {
-                    ctf.start();
-                } catch (Exception e) {
-                    Bukkit.getLogger().warning("[Orchestrator] ASYNC Match start failed: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            });
+            ctf.start();
 
             sender.sendMessage("[Orchestrator] Match " + matchId + " assigned on map " + mapId);
         } catch (Exception e) {
