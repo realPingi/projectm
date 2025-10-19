@@ -10,6 +10,7 @@ import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUserManager;
 import com.yalcinkaya.ctf.util.IntTuple;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import okhttp3.OkHttpClient;
@@ -33,12 +34,19 @@ public class CTF extends JavaPlugin {
     private final KitListener kitListener = new KitListener();
     private final PluginManager pluginManager = getServer().getPluginManager();
     private OkHttpClient http = new OkHttpClient();
-    @Getter
-    private String matchId;
     @Setter
     private Map map;
     @Setter
     private CTFStage currentStage;
+    @Getter
+    @Setter
+    private String matchId;
+    @Getter
+    @Setter
+    private String mapId;
+    @Getter
+    @Setter
+    private String teamJson;
 
     public void onEnable() {
         LOGGER.info("projectm enabled");
@@ -59,20 +67,24 @@ public class CTF extends JavaPlugin {
         this.getCommand("settimer").setExecutor(new SetTimerCommand());
         this.getCommand("setflag").setExecutor(new SetFlagCommand());
         this.getCommand("forcewin").setExecutor(new ForceWinCommand());
+        this.getCommand("assignmatch").setExecutor(new AssignMatchCommand());
 
-        matchId = System.getenv("MATCH_ID");
+        String MATCH_ID = System.getenv("MATCH_ID");
+        String MAP_ID = System.getenv("MAP_ID");
+        String TEAM_JSON = System.getenv("TEAMS_CONFIG_B64");
 
-        if (matchId == null || matchId.isEmpty()) {
-            getLogger().severe("CRITICAL ERROR: MATCH_ID environment variable is missing!");
-            return;
+        String POOL_MODE = System.getenv("POOL_MODE");
+
+        // Cold Start Bedingung: MATCH_ID ist gesetzt UND es ist KEIN Pool-Modus
+        if (MATCH_ID != null && MAP_ID != null && TEAM_JSON != null && !"true".equalsIgnoreCase(POOL_MODE)) {
+            setMatchId(MATCH_ID);
+            setMapId(MAP_ID);
+            setTeamJson(TEAM_JSON);
+            start();
         }
-
-        getLogger().info("Successfully initialized match: " + matchId);
-
-        start();
     }
 
-    private void start() {
+    public void start() {
         new PreStage().start();
     }
 

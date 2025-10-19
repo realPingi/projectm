@@ -316,7 +316,7 @@ public class CTFUtil {
     }
 
     public static void loadMap() {
-        String mapId = System.getenv("MAP_ID");
+        String mapId = CTF.getInstance().getMapId();
         CTF.getInstance().setMap(CTFMap.getFromId(mapId).getMap());
         Path p = Paths.get("maps", mapId + ".schem");
         loadSchematic(p.toString());

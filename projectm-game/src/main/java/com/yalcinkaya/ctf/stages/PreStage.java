@@ -38,8 +38,8 @@ public class PreStage extends CTFStage<PreStageListener> {
         World world = Bukkit.getWorld(ctfWorld);
         world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, false);
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-        CTFUtil.loadMap();
 
+        CTFUtil.loadMap();
         initializeTeams();
 
         Bukkit.getOnlinePlayers().forEach(player -> stageListener.setupPlayer(player));
@@ -80,7 +80,7 @@ public class PreStage extends CTFStage<PreStageListener> {
         Gson gson = new Gson();
 
         // 1. Base64-String aus Umgebungsvariable lesen
-        String teamsConfigBase64 = System.getenv("TEAMS_CONFIG_B64");
+        String teamsConfigBase64 = CTF.getInstance().getTeamJson();
 
         if (teamsConfigBase64 == null || teamsConfigBase64.isEmpty()) {
             getLogger().severe("Keine TEAMS_CONFIG_B64 Umgebungsvariable gefunden! Match-Start fehlgeschlagen.");

@@ -1,4 +1,4 @@
-// simple-orchestrator.js (stateless, port-range + /matches + robust cleanup)
+// warm-pool-orchestrator.js — Lean, Priority Warm Pool, Fixed Limits & /matches Endpoint
 "use strict";
 
 const http = require("http");
@@ -6,572 +6,502 @@ const net = require("net");
 const { spawnSync, spawn } = require("child_process");
 const { v4: uuidv4 } = require("uuid");
 
-/* ───────── Konfiguration ───────── */
-
+/* ───── Config & Cache ───── */
 const PORT = Number(process.env.ORCH_PORT || 4000);
 const HOST = process.env.ORCH_HOST || "0.0.0.0";
 const DOCKER = process.env.DOCKER_BIN || "/usr/bin/docker";
 
+// Feste Limits
 const PORT_MIN = 25566;
 const PORT_MAX = 25569;
-const MAX_MATCHES = 4; // parallel limit
-const LABEL = "projectm=game";
+const MAX_TOTAL = 4;
+const MATCH_CAP = 4;
+const WARM_CAP  = 2;
 
-// Docker run Timeout (bis Container-ID zurückkommt)
-const RUN_TIMEOUT_MS = Number(process.env.RUN_TIMEOUT_MS || 10_000);
+// KRITISCHER FIX: Trennung der Label-Schlüssel
+const MANAGED_LABEL = "projectm.managed=true"; // Hauptfilter für ALLE Container
+const POOL_STATE_LABEL = "projectm.pool=true"; // Spezifischer Flag für Warm-Container
 
-// Ready-Warteparameter (MC-Status)
-const READY_TIMEOUT_MS = Number(process.env.READY_TIMEOUT_MS || 60_000);
-const PING_TIMEOUT_MS = Number(process.env.PING_TIMEOUT_MS || 1500);
-const REQUIRED_OK = Number(process.env.REQUIRED_OK || 3);
-const GAP_OK_MS = Number(process.env.GAP_OK_MS || 300);
-const GRACE_FIRST_MS = Number(process.env.GRACE_FIRST_MS || 500);
+const GAME_IMAGE = process.env.GAME_IMAGE || "realpingi/game:ready";
 
-// Host, gegen den gepingt wird (127.0.0.1 wenn Docker und Orchestrator auf gleichem Host)
-const GAME_PING_HOST = process.env.GAME_PING_HOST || "127.0.0.1";
+const RCON_PORT = Number(process.env.RCON_PORT || 25575);
+// PASSWORT-FIX: Auf changeme zurückgesetzt.
+const RCON_PASS = process.env.RCON_PASS || "changeme";
 
-// Cleanup immer aktiv, mit Schonfrist (damit Debug möglich ist)
-const CLEANUP_GRACE_MS = Number(process.env.CLEANUP_GRACE_MS || 5 * 60 * 1000); // 5 min
-const CLEANUP_INTERVAL = Number(process.env.CLEANUP_INTERVAL || 30_000); // 30 s
-// Sofortiges Löschen bei Ready-Fehler?
-const EAGER_FAIL_RM = (process.env.EAGER_FAIL_RM || "false").toLowerCase() === "true";
+const RUN_TIMEOUT_MS   = 10_000;
+const READY_TIMEOUT_MS = 30_000;
+const TCP_TIMEOUT_MS   = 800;
+const EAGER_FAIL_RM    = true;
+// NETZWERK-FIX: Für Host-Zugriff
+const GAME_PING_HOST   = process.env.GAME_PING_HOST || "127.0.0.1";
 
-/* ───────── helpers ───────── */
+// NEU: Lokaler Cache für Warm-Assigned Matches
+// Speichert: { containerId: teamsConfigBase64 }
+const warmAssignedCache = new Map();
+
+/* ───── helpers ───── */
 
 function sh(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { encoding: "utf8", ...opts });
-  if (res.error) throw res.error;
-  return {
-    code: res.status ?? 0,
-    out: (res.stdout || "").trim(),
-    err: (res.stderr || "").trim(),
-  };
-}
-
-function dockerInspect(idOrName) {
-  const { code, out } = sh(DOCKER, ["inspect", idOrName]);
-  if (code !== 0 || !out) return null;
-  try {
-    return JSON.parse(out)[0];
-  } catch {
-    return null;
-  }
+  const r = spawnSync(cmd, args, { encoding: "utf8", ...opts });
+  if (r.error) throw r.error;
+  return { code: r.status ?? 0, out: (r.stdout || "").trim(), err: (r.stderr || "").trim() };
 }
 
 function listGameContainers(all = false) {
-  const args = [
-    "ps",
-    "--format",
-    "{{.ID}}|{{.Names}}|{{.Ports}}|{{.Status}}",
-    "--filter",
-    `label=${LABEL}`,
-  ];
-  if (all) args.splice(1, 0, "-a");
+  const args = ["ps","--format","{{.ID}}|{{.Names}}|{{.Ports}}","--filter",`label=${MANAGED_LABEL}`];
+  if (all) args.splice(1,0,"-a");
   const { code, out } = sh(DOCKER, args);
   if (code !== 0 || !out) return [];
-  return out
-    .split("\n")
-    .filter(Boolean)
-    .map((l) => {
-      const [id, name, ports, status] = l.split("|");
-      return { id, name, ports: ports || "", status: status || "" };
-    });
+  return out.split("\n").filter(Boolean).map(l => {
+    const [id,name,ports]=l.split("|"); return {id,name,ports:ports||""};
+  });
+}
+const listWarm    = (all=false)=> listGameContainers(all).filter(c => c?.name?.startsWith("warm-"));
+const listMatches = (all=false)=> listGameContainers(all).filter(c => c?.name?.startsWith("match-"));
+const runningMatchesCount = ()=> listMatches(false).length;
+
+/** NEU: Liest MatchDetails und ergänzt fehlende TeamsConfigB64 aus Cache */
+function fetchMatchDetails(containerId, initialMatchData = {}) {
+  let hp = null, rp = null, teamsConfigBase64 = null;
+
+  try {
+    const { code, out } = sh(DOCKER, ["inspect", containerId]);
+    if (code === 0 && out) {
+      const js = JSON.parse(out)[0] || {};
+
+      // 1. Ports ermitteln
+      const gp = js?.NetworkSettings?.Ports?.["25565/tcp"];
+      // Wir suchen den Host-Port, der dem Container-RCON-Port zugeordnet ist (z.B. 25575)
+      const rk = `${RCON_PORT}/tcp`;
+      const rpMap = js?.NetworkSettings?.Ports?.[rk];
+
+      // Game Host Port
+      hp = Number(Array.isArray(gp) && gp[0]?.HostPort);
+      // RCON Host Port (wird automatisch von Docker zugewiesen)
+      rp = Number(Array.isArray(rpMap) && rpMap[0]?.HostPort);
+
+      // 2. TeamsConfig aus Umgebungsvariablen ermitteln (Nur Cold Start)
+      const envs = js?.Config?.Env || [];
+      const teamsEnv = envs.find(e => e.startsWith("TEAMS_CONFIG_B64="));
+      if (teamsEnv) {
+        teamsConfigBase64 = teamsEnv.substring("TEAMS_CONFIG_B64=".length);
+      }
+    }
+  } catch(e) {
+    console.error(`[inspect] Failed to inspect container ${containerId}: ${e.message}`);
+  }
+
+  // 3. NEU: Ergänzung aus lokalem Cache, falls Umgebungsvariable leer ist
+  if (!teamsConfigBase64 && warmAssignedCache.has(containerId)) {
+      teamsConfigBase64 = warmAssignedCache.get(containerId);
+  }
+
+  // Fallback für Ports (falls inspect fehlschlägt, aber 'docker ps' Ports bekannt sind)
+  if (!hp && initialMatchData.ports) {
+    const m = (initialMatchData.ports || "").match(/:(\d+)->25565\/tcp/);
+    if (m) hp = Number(m[1]);
+  }
+
+  // RCON-Port-FIX-FALLBACK: Wenn Docker Inspect den RCON-Port nicht meldet,
+  // gehen wir zur +1000-Konvention zurück, da die Startlogik dies verwendet.
+  if (!rp && hp) rp = hp + 1000;
+
+  return {
+    containerId,
+    name: initialMatchData.name,
+    port: hp,
+    rconPort: rp,
+    teamsConfigBase64: teamsConfigBase64
+  };
 }
 
 function usedHostPorts() {
-  const arr = listGameContainers(true);
-  const ports = new Set();
-  for (const c of arr) {
-    // examples: "0.0.0.0:25566->25565/tcp" or ":::25566->25565/tcp"
-    const m = (c.ports || "").match(/:(\d+)->25565\/tcp/);
-    if (m) ports.add(Number(m[1]));
+  const { code, out } = sh(DOCKER, ["ps","-a","--format","{{.Ports}}"]);
+  if (code !== 0 || !out) return new Set();
+  const s = new Set();
+  for (const line of out.split("\n")) {
+    if (!line) continue;
+    // Sucht nur nach Game-Ports (25565)
+    const m = line.match(/(?::|0\.0\.0\.0:|\[::\]:)(\d+)->25565\/tcp/g);
+    if (m) {
+      for (const hit of m) {
+        const num = Number((hit.match(/(\d+)->25565\/tcp/)||[])[1]);
+        if (num) s.add(num);
+      }
+    }
   }
-  return ports;
+  return s;
 }
 
-function findFreePort() {
+function getFreePort(){
   const used = usedHostPorts();
+  const availablePorts = [];
+
   for (let p = PORT_MIN; p <= PORT_MAX; p++) {
-    if (!used.has(p)) return p;
-  }
-  throw new Error("No free ports in 25566-25569");
-}
-
-function runningMatchesCount() {
-  return listGameContainers(false).length;
-}
-
-function rmContainer(nameOrId) {
-  try {
-    sh(DOCKER, ["rm", "-f", nameOrId]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function resolveByPort(port) {
-  const all = listGameContainers(true);
-  return all.find((c) => (c.ports || "").includes(`:${port}->25565`));
-}
-
-/* ───────── Status & Cleanup ───────── */
-
-function listMatchesWithTeams() {
-  const rows = listGameContainers(true);
-  const result = [];
-  for (const c of rows) {
-    const ins = dockerInspect(c.id);
-    if (!ins) continue;
-
-    // Host-Port (25565 im Container)
-    let hostPort = null;
-    const p = ins.NetworkSettings?.Ports?.["25565/tcp"];
-    if (Array.isArray(p) && p.length > 0 && p[0]?.HostPort) {
-      hostPort = Number(p[0].HostPort);
-    }
-
-    // Teams Base64 aus Env lesen
-    let teamsB64 = null;
-    for (const kv of ins.Config?.Env || []) {
-      if (kv.startsWith("TEAMS_CONFIG_B64=")) {
-        teamsB64 = kv.substring("TEAMS_CONFIG_B64=".length);
-        break;
+      if (!used.has(p)) {
+          availablePorts.push(p);
       }
-    }
-
-    if (hostPort) {
-      result.push({
-        containerId: c.id,
-        name: c.name,
-        port: hostPort,
-        teamsConfigBase64: teamsB64,
-      });
-    }
   }
-  return result;
+
+  // HINWEIS: WARUM SIND PORTS BELEGT?
+  if (availablePorts.length === 0 && used.size > 0) {
+      const labeledCount = listGameContainers(false).length;
+      if (labeledCount < MAX_TOTAL) {
+          console.warn(`[PORT WARNING] All ports (${PORT_MIN}-${PORT_MAX}) are used, but only ${labeledCount} labeled containers are running. Ports are blocked by non-managed containers.`);
+      }
+  }
+
+  return availablePorts.length > 0 ? availablePorts[0] : null;
 }
 
-// Cleanup-Loop: löscht NICHT laufende Container nach Schonfrist
-setInterval(() => {
-  try {
-    const all = listGameContainers(true);
-    const now = Date.now();
-    for (const c of all) {
-      const ins = dockerInspect(c.id);
-      if (!ins || !ins.State) continue;
-      const running = !!ins.State.Running;
+function rmContainer(idOrName){
+  // NEU: Cache löschen, wenn Container entfernt wird
+  const containerId = (listGameContainers(true).find(c => c.id === idOrName || c.name === idOrName) || {}).id;
+  if (containerId) warmAssignedCache.delete(containerId);
 
-      const finishedAt =
-        ins.State.FinishedAt && ins.State.FinishedAt !== "0001-01-01T00:00:00Z"
-          ? Date.parse(ins.State.FinishedAt)
-          : null;
-      const createdAt = ins.Created ? Date.parse(ins.Created) : null;
+  try{ sh(DOCKER,["rm","-f",idOrName]); return true; }catch{ return false; }
+}
 
-      const ageMs = finishedAt
-        ? now - finishedAt
-        : createdAt
-        ? now - createdAt
-        : Infinity;
-
-      if (!running && ageMs > CLEANUP_GRACE_MS) {
-        rmContainer(c.id);
-        // console.log(`[cleanup] removed ${c.name} after ${Math.round(ageMs/1000)}s`);
-      }
-    }
-  } catch {
-    // ignore
-  }
-}, CLEANUP_INTERVAL);
-
-/* ───────── Ready-Logic (TCP + MC Status) ───────── */
-
-// schneller TCP-Check
-function tcpConnectOk(host, port, timeoutMs = 800) {
-  return new Promise((resolve) => {
-    const s = net.createConnection({ host, port });
-    let settled = false;
-    const done = (ok) => {
-      if (!settled) {
-        settled = true;
-        try {
-          s.destroy();
-        } catch {}
-        resolve(ok);
-      }
-    };
-    s.setTimeout(timeoutMs, () => done(false));
-    s.on("error", () => done(false));
-    s.on("connect", () => done(true));
+/* Readiness: schlank (TCP) */
+function tcp(host,port,ms=TCP_TIMEOUT_MS){
+  return new Promise(res=>{
+    const s=net.createConnection({host,port});
+    let done=false; const finish=(ok)=>{ if(!done){ done=true; try{s.destroy();}catch{}; res(ok);} };
+    s.setTimeout(ms,()=>finish(false));
+    s.on("error",()=>finish(false));
+    s.on("connect",()=>finish(true));
   });
 }
-
-function isContainerRunning(idOrName) {
-  const ins = dockerInspect(idOrName);
-  return !!(ins && ins.State && ins.State.Running);
-}
-
-// VarInt & String utils für MC-Protokoll
-function writeVarInt(n) {
-  const bytes = [];
-  do {
-    let temp = n & 0x7f;
-    n >>>= 7;
-    if (n !== 0) temp |= 0x80;
-    bytes.push(temp);
-  } while (n !== 0);
-  return Buffer.from(bytes);
-}
-function writeString(s) {
-  const data = Buffer.from(s, "utf8");
-  return Buffer.concat([writeVarInt(data.length), data]);
-}
-
-// Robust: liest das MC-Statuspaket korrekt (VarInt framing)
-function mcStatusPing(host, port, timeoutMs = PING_TIMEOUT_MS, proto = 758) {
-  return new Promise((resolve) => {
-    const socket = net.createConnection({ host, port });
-    socket.setNoDelay(true);
-
-    let done = false;
-    const finish = (ok) => {
-      if (!done) {
-        done = true;
-        try { socket.destroy(); } catch {}
-        resolve(ok);
-      }
-    };
-
-    socket.setTimeout(timeoutMs, () => finish(false));
-    socket.on('error', () => finish(false));
-
-    socket.on('connect', () => {
-      try {
-        // ---- Handshake (state=1 status) ----
-        const hostBuf = writeString(host);
-        const portBuf = Buffer.allocUnsafe(2); portBuf.writeUInt16BE(port);
-        const hsPayload = Buffer.concat([
-          writeVarInt(0x00),      // packet id
-          writeVarInt(proto),     // protocol version (beliebig ok)
-          hostBuf,                // server address (string)
-          portBuf,                // server port (unsigned short)
-          writeVarInt(0x01)       // next state = status (1)
-        ]);
-        const hsPacket = Buffer.concat([writeVarInt(hsPayload.length), hsPayload]);
-
-        // ---- Status Request (packet id 0x00) ----
-        const reqPayload = writeVarInt(0x00);
-        const reqPacket  = Buffer.concat([writeVarInt(reqPayload.length), reqPayload]);
-
-        socket.write(hsPacket);
-        socket.write(reqPacket);
-      } catch {
-        return finish(false);
-      }
-    });
-
-    // Puffer & Parser: VarInt-Länge → PacketId → JSON-Länge → JSON
-    let buf = Buffer.alloc(0);
-
-    function readVarIntFrom(b, offset) {
-      let numRead = 0, result = 0, read;
-      do {
-        if (offset + numRead >= b.length) return null; // noch nicht genug Daten
-        read = b[offset + numRead];
-        const value = (read & 0x7F);
-        result |= (value << (7 * numRead));
-        numRead++;
-        if (numRead > 5) return null; // defekt
-      } while ((read & 0x80) === 0x80);
-      return { value: result, size: numRead };
-    }
-
-    socket.on('data', (chunk) => {
-      if (done) return;
-      buf = Buffer.concat([buf, chunk]);
-
-      // Paket-Länge
-      const len = readVarIntFrom(buf, 0);
-      if (!len) return; // warten
-      const totalLen = len.value;
-      const afterLen = len.size;
-
-      if (buf.length < afterLen + totalLen) return; // noch nicht komplett
-
-      // PacketId
-      const pid = readVarIntFrom(buf, afterLen);
-      if (!pid) return; // ungewöhnlich, aber weiter warten
-      if (pid.value !== 0x00) return finish(false); // Status-Response muss 0x00 sein
-      let off = afterLen + pid.size;
-
-      // JSON-Länge
-      const jlen = readVarIntFrom(buf, off);
-      if (!jlen) return;
-      off += jlen.size;
-
-      if (off + jlen.value > buf.length) return; // noch nicht komplett
-
-      // JSON
-      const jsonStr = buf.slice(off, off + jlen.value).toString('utf8');
-      try {
-        const parsed = JSON.parse(jsonStr);
-        // minimale Plausibilitätsprüfung
-        if (parsed && typeof parsed === 'object' && parsed.version) {
-          return finish(true);
-        }
-      } catch {
-        // invalid JSON → fail
-      }
-      return finish(false);
-    });
-
-    socket.on('end', () => finish(false));
-  });
-}
-
-
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-/**
- * Wartet robust auf Readiness:
- * - prüft seriell Hosts (z.B. [GAME_PING_HOST, '127.0.0.1', '172.17.0.1'])
- * - bricht ab, wenn Container in der Zwischenzeit stoppt
- * - nutzt erst TCP-Connect, dann MC-Status-Ping
- */
-async function waitUntilReady(hosts, port, containerId) {
-  const start = Date.now();
-  const hostList = Array.isArray(hosts) ? hosts : [hosts];
-
-  let okInRow = 0;
-  let firstOkAt = -1;
-
-  while (Date.now() - start < READY_TIMEOUT_MS) {
-    if (containerId && !isContainerRunning(containerId)) {
-      throw new Error("container stopped during readiness wait");
-    }
-
-    // 1) schneller TCP-Check auf irgendeinen Host
-    let tcpOk = false;
-    for (const h of hostList) {
-      // eslint-disable-next-line no-await-in-loop
-      if (await tcpConnectOk(h, port, Math.min(PING_TIMEOUT_MS, 800))) {
-        tcpOk = true;
-        break;
-      }
-    }
-    if (!tcpOk) {
-      okInRow = 0;
-      firstOkAt = -1;
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(250);
-      continue;
-    }
-
-    // 2) Ein MC-Status-Ping (auf den ersten Host der Liste)
-    const pingHost = hostList[0];
-    // eslint-disable-next-line no-await-in-loop
-    const ok = await mcStatusPing(pingHost, port, PING_TIMEOUT_MS);
-    if (ok) {
-      okInRow++;
-      if (firstOkAt < 0) firstOkAt = Date.now();
-      if (okInRow >= REQUIRED_OK && Date.now() - firstOkAt >= GRACE_FIRST_MS) return true;
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(GAP_OK_MS);
-    } else {
-      okInRow = 0;
-      firstOkAt = -1;
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(250);
-    }
+async function waitReady(port){
+  const start=Date.now();
+  while (Date.now()-start < READY_TIMEOUT_MS) {
+    if (await tcp(GAME_PING_HOST,port,TCP_TIMEOUT_MS)) return true;
+    await new Promise(r=>setTimeout(r,200));
   }
   return false;
 }
 
-/* ───────── core ops ───────── */
-
-function startGameServer({ mapId, teamsConfigBase64 }) {
+/* RCON (kompakt) */
+// Das Timeout wurde auf 5000ms erhöht
+async function rconSend(host, port, pass, cmd, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
-    try {
-      if (!mapId) return reject(new Error("mapId missing"));
-      if (!teamsConfigBase64) return reject(new Error("teamsConfigBase64 missing"));
-      if (runningMatchesCount() >= MAX_MATCHES) return reject(new Error("Max server limit reached"));
+    const net = require("net");
+    const sock = net.createConnection({ host, port });
+    const pack = (id, type, payload) => {
+      const msg = Buffer.from(payload || "", "utf8");
+      const buf = Buffer.alloc(14 + msg.length);
+      buf.writeInt32LE(10 + msg.length, 0);
+      buf.writeInt32LE(id, 4);
+      buf.writeInt32LE(type, 8);
+      msg.copy(buf, 12);
+      buf.writeInt16LE(0, 12 + msg.length);
+      return buf;
+    };
 
-      const port = findFreePort();
-      const matchId = uuidv4();
-      const name = `match-${matchId}`;
-
-      const args = [
-        "run",
-        "-d",
-        "--label",
-        LABEL,
-        "--name",
-        name,
-        "-p",
-        `${port}:25565`,
-        "-e",
-        `MATCH_ID=${matchId}`,
-        "-e",
-        `MAP_ID=${mapId}`,
-        "-e",
-        `TEAMS_CONFIG_B64=${teamsConfigBase64}`,
-        "realpingi/game:ready",
-      ];
-
-      console.log(`[orchestrator] starting match ${matchId} on port ${port}…`);
-
-      const child = spawn(DOCKER, args, { stdio: ["ignore", "pipe", "pipe"] });
-      let stdout = "",
-        stderr = "";
-      let timedOut = false;
-      const t = setTimeout(() => {
-        timedOut = true;
-        try {
-          child.kill("SIGKILL");
-        } catch {}
-      }, RUN_TIMEOUT_MS);
-
-      child.stdout.on("data", (d) => (stdout += d.toString()));
-      child.stderr.on("data", (d) => (stderr += d.toString()));
-      child.on("error", (err) => {
-        clearTimeout(t);
-        reject(err);
-      });
-      child.on("close", async (code) => {
-        clearTimeout(t);
-        if (timedOut) return reject(new Error("docker run timed out"));
-        if (code !== 0)
-          return reject(new Error(`docker run failed (${code}): ${(stderr || stdout).trim()}`));
-        const containerId = (stdout.trim().split("\n").pop() || "").trim();
-        if (!containerId) return reject(new Error("no container id"));
-
-        console.log(
-          `[orchestrator] container ${containerId} started; waiting ready on ${GAME_PING_HOST}:${port}`
-        );
-
-        try {
-          const hostsToTry = [GAME_PING_HOST, "127.0.0.1", "172.17.0.1"].filter(
-            (v, i, a) => v && a.indexOf(v) === i
-          );
-          const ready = await waitUntilReady(hostsToTry, port, containerId);
-          console.log(
-            `[orchestrator] ready=${ready} on ${hostsToTry[0]}:${port} (match ${matchId})`
-          );
-          if (!ready) {
-            if (EAGER_FAIL_RM) rmContainer(containerId);
-            return reject(new Error("game not ready in time"));
+    const readPacket = () =>
+      new Promise((res, rej) => {
+        let chunks = Buffer.alloc(0);
+        sock.on("data", (c) => {
+          chunks = Buffer.concat([chunks, c]);
+          if (chunks.length >= 4) {
+            const len = chunks.readInt32LE(0) + 4;
+            if (chunks.length >= len) {
+              sock.removeAllListeners("data");
+              res(chunks.subarray(0, len));
+            }
           }
-        } catch (e) {
-          console.error(`[orchestrator] readiness failed: ${e.message}`);
-          if (EAGER_FAIL_RM) rmContainer(containerId);
-          return reject(e);
-        }
-
-        resolve({ matchId, name, gamePort: port, containerId });
+        });
+        setTimeout(() => rej(new Error("rcon read timeout")), 3000);
       });
-    } catch (e) {
-      reject(e);
-    }
+
+    sock.once("connect", async () => {
+      try {
+        // AUTH
+        sock.write(pack(1, 3, pass));
+        const authResp = await readPacket();
+        const id = authResp.readInt32LE(4);
+        if (id === -1) throw new Error("rcon auth failed");
+
+        // COMMAND
+        sock.write(pack(2, 2, cmd));
+        sock.write(pack(3, 2, "")); // terminator
+        const resp = await readPacket();
+        const msg = resp.subarray(12, resp.length - 2).toString("utf8");
+        sock.end();
+        resolve(msg);
+      } catch (e) {
+        try { sock.destroy(); } catch {}
+        reject(e);
+      }
+    });
+
+    sock.once("error", reject);
   });
 }
 
-function endGame({ name, port }) {
-  if (name) return rmContainer(name);
-  if (port) {
-    const c = resolveByPort(Number(port));
-    return c ? rmContainer(c.name) : false;
-  }
-  return false;
+
+/* Docker run: Alle Game-Container erhalten das 'projectm.managed=true' Label */
+function dockerRunArgs({ name, hostGamePort, hostRconPort, envs = [], poolMode = false }) {
+  const args = [
+    "run","-d","--rm","--pull=missing",
+    "--label", MANAGED_LABEL, // <--- KRITISCHES MANAGED LABEL
+    ...(poolMode ? ["--label", POOL_STATE_LABEL] : []), // <--- SAUBERER POOL STATE LABEL
+    "--name", name,
+    "-p", `${hostGamePort}:25565`, // Game Port Mapping
+    "-p", `${hostRconPort}:${RCON_PORT}`, // RCON Port Mapping
+    ...envs.flatMap(e => ["-e", e]),
+    GAME_IMAGE
+  ];
+  return args;
 }
 
-/* ───────── http api ───────── */
+/* Startfunktionen */
+function startWarmContainer(){
+  return new Promise((resolve,reject)=>{
+    const port = getFreePort();
+    if (!port) return reject(new Error(`no free ports (${PORT_MIN}–${PORT_MAX} only)`));
 
-const server = http.createServer(async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "content-type");
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    return res.end();
-  }
+    // REVERT-FIX: RCON Host Port ist nun wieder +1000, um Kollisionen zu vermeiden
+    const hostGamePort = port;
+    const hostRconPort = port + 1000;
 
+    const name=`warm-${uuidv4()}`;
+    const envs=["POOL_MODE=true","MATCH_ID=dummy","MAP_ID=default","TEAMS_CONFIG_B64="];
+
+    const args = dockerRunArgs({name,hostGamePort,hostRconPort,envs,poolMode:true});
+    const child=spawn(DOCKER, args, {stdio:["ignore","pipe","pipe"]});
+    let out="", err=""; let timed=false;
+    const t=setTimeout(()=>{timed=true; try{child.kill("SIGKILL");}catch{};}, RUN_TIMEOUT_MS);
+    child.stdout.on("data",d=>out+=d.toString());
+    child.stderr.on("data",d=>err+=d.toString());
+    child.on("close", async (code)=>{
+      clearTimeout(t);
+      if (timed || code!==0) {
+        return reject(new Error(`docker run (warm) failed${err?`: ${err.trim()}`:""}`));
+      }
+      const id=(out.trim().split("\n").pop()||"").trim();
+      if (!id) return reject(new Error("no container id (warm)"));
+
+      // WICHTIG: Warte auf TCP-Readiness
+      const ready = await waitReady(hostGamePort);
+      if (!ready){ if(EAGER_FAIL_RM) rmContainer(id); return reject(new Error("warm not ready")); }
+
+      resolve({ id, name, port: hostGamePort, rconPort: hostRconPort });
+    });
+  });
+}
+
+function startMatchCold({ mapId, teamsConfigBase64 }){
+  return new Promise((resolve,reject)=>{
+    const matches = runningMatchesCount();
+    const totalLabeled = listGameContainers(false).length;
+
+    if (matches >= MATCH_CAP) return reject(new Error(`match cap reached (${MATCH_CAP})`));
+    if (totalLabeled >= MAX_TOTAL) return reject(new Error(`total cap reached (${MAX_TOTAL})`));
+
+    const port = getFreePort();
+    if (!port) return reject(new Error(`no free ports (${PORT_MIN}–${PORT_MAX} only). Ports are likely blocked by unmanaged containers.`));
+
+    // REVERT-FIX: RCON Host Port ist nun wieder +1000
+    const hostGamePort = port;
+    const hostRconPort = port + 1000;
+
+    const matchId=uuidv4(), name=`match-${matchId}`;
+    const envs=[`MATCH_ID=${matchId}`,`MAP_ID=${mapId}`,`TEAMS_CONFIG_B64=${teamsConfigBase64}`];
+
+    const args = dockerRunArgs({name,hostGamePort,hostRconPort,envs});
+    const child=spawn(DOCKER, args, {stdio:["ignore","pipe","pipe"]});
+    let out="", err="", timed=false;
+    const t=setTimeout(()=>{timed=true; try{child.kill("SIGKILL");}catch{};}, RUN_TIMEOUT_MS);
+    child.stdout.on("data",d=>out+=d.toString());
+    child.stderr.on("data",d=>err+=d.toString());
+    child.on("close", async (code)=>{
+      clearTimeout(t);
+      if (timed || code!==0) {
+        return reject(new Error(`docker run (match) failed${err?`: ${err.trim()}`:""}`));
+      }
+      const id=(out.trim().split("\n").pop()||"").trim();
+      if (!id) return reject(new Error("no container id"));
+
+      // WICHTIG: Warte auf TCP-Readiness
+      const ready = await waitReady(hostGamePort);
+      if (!ready){ if(EAGER_FAIL_RM) rmContainer(id); return reject(new Error("match not ready")); }
+
+      resolve({ matchId, name, gamePort: hostGamePort, containerId: id });
+    });
+  });
+}
+
+/* Warm → Match (verbraucht keinen neuen Port) */
+async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
+  if (runningMatchesCount() >= MATCH_CAP) return null;
+
+  const warm = listWarm(false);
+  if (!warm.length) return null;
+
+  const first = warm[0];
+
+  // Ports und RCON Port ermitteln
+  const details = fetchMatchDetails(first.id, first);
+  if (!details.port) return null;
+
+  const matchId = uuidv4();
+
+  // RCON-Befehl zum Umkonfigurieren des Warm-Containers
   try {
-    if (req.method === "GET" && req.url === "/health") {
-      const usedSet = usedHostPorts();
-      const used = Array.from(usedSet).sort((a, b) => a - b);
-      const free = [];
-      for (let p = PORT_MIN; p <= PORT_MAX; p++) if (!usedSet.has(p)) free.push(p);
-      const running = runningMatchesCount();
-      res.writeHead(200, { "content-type": "application/json" });
-      return res.end(
-        JSON.stringify({
-          ok: true,
-          running,
-          used,
-          free,
-          max: MAX_MATCHES,
-          cleanup_grace_ms: CLEANUP_GRACE_MS,
-          cleanup_interval_ms: CLEANUP_INTERVAL,
-          ping_host: GAME_PING_HOST,
-          ready_timeout_ms: READY_TIMEOUT_MS,
-        })
-      );
-    }
-
-    if (req.method === "GET" && req.url === "/matches") {
-      const matches = listMatchesWithTeams();
-      res.writeHead(200, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ ok: true, matches }));
-    }
-
-    if (req.method === "POST" && req.url === "/create-match") {
-      let body = "";
-      req.on("data", (c) => (body += c));
-      req.on("end", async () => {
-        try {
-          const { mapId, teamsConfigBase64 } = JSON.parse(body || "{}");
-          const { matchId, name, gamePort, containerId } = await startGameServer({
-            mapId,
-            teamsConfigBase64,
-          });
-          res.writeHead(201, { "content-type": "application/json" });
-          res.end(JSON.stringify({ ok: true, matchId, name, gamePort, containerId }));
-        } catch (e) {
-          res.writeHead(400, { "content-type": "application/json" });
-          res.end(JSON.stringify({ ok: false, error: e.message }));
-        }
-      });
-      return;
-    }
-
-    if (req.method === "POST" && req.url === "/end-match") {
-      let body = "";
-      req.on("data", (c) => (body += c));
-      req.on("end", () => {
-        try {
-          const { name, port } = JSON.parse(body || "{}");
-          const ok = endGame({ name, port });
-          res.writeHead(ok ? 200 : 404, { "content-type": "application/json" });
-          res.end(JSON.stringify({ ok }));
-        } catch (e) {
-          res.writeHead(400, { "content-type": "application/json" });
-          res.end(JSON.stringify({ ok: false, error: e.message }));
-        }
-      });
-      return;
-    }
-
-    res.writeHead(404, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: false, error: "Not Found" }));
-  } catch (e) {
-    res.writeHead(500, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: false, error: e.message }));
+    await rconSend(GAME_PING_HOST, details.rconPort, RCON_PASS, `assignmatch ${matchId} ${mapId} ${teamsConfigBase64}`, 5000);
+    console.log(`[RCON] Successfully assigned matchId ${matchId}.`);
+  } catch(e) {
+    console.error(`[RCON ERROR] Failed to assign match to warm container ${first.name}. Host: ${GAME_PING_HOST}, Port: ${details.rconPort}. Error: ${e.message}`);
+    return null;
   }
+
+  // Container umbenennen
+  try { sh(DOCKER, ["rename", first.name, `match-${matchId}`]); } catch {}
+
+  // WICHTIG: Speichert die TeamsConfig lokal, da sie nicht als Env-Var gespeichert wird.
+  warmAssignedCache.set(first.id, teamsConfigBase64);
+
+  ensureWarmPool(); // non-blocking
+
+  return {
+    matchId,
+    name: `match-${matchId}`,
+    gamePort: details.port,
+    containerId: first.id,
+    teamsConfigBase64
+  };
+}
+
+/* ───── Pool-Logik (unverändert) ───── */
+let poolTickRunning = false;
+async function ensureWarmPool(){
+  if (poolTickRunning) return;
+  poolTickRunning = true;
+  try{
+    const matches = runningMatchesCount();
+    const all     = listGameContainers(false).length;
+    const warmArr = listWarm(false);
+    const targetWarm = Math.max(0, Math.min(WARM_CAP, MAX_TOTAL - matches));
+
+    if (warmArr.length > targetWarm){
+      const excess = warmArr.slice(0, warmArr.length - targetWarm);
+      for (const c of excess) rmContainer(c.id);
+      return;
+    }
+
+    const canCreate = Math.max(0, MAX_TOTAL - all);
+    const need = Math.max(0, targetWarm - warmArr.length);
+    const toCreate = Math.min(need, canCreate);
+
+    for (let i=0; i<toCreate; i++){
+      try{ await startWarmContainer(); }catch(e){ console.error("[pool] warm start failed:", e.message); break; }
+    }
+  } finally {
+    poolTickRunning = false;
+  }
+}
+
+setInterval(ensureWarmPool, 3500);
+ensureWarmPool();
+
+/* ───── HTTP ───── */
+const server = http.createServer((req,res)=>{
+  res.setHeader("Access-Control-Allow-Origin","*");
+  res.setHeader("Access-Control-Allow-Headers","content-type");
+  if (req.method==="OPTIONS"){ res.writeHead(204); return res.end(); }
+
+  const send = (code,obj)=>{ res.writeHead(code,{"content-type":"application/json"}); res.end(JSON.stringify(obj)); };
+
+  if (req.method==="GET" && req.url==="/health"){
+    const usedSet = usedHostPorts();
+    const used = Array.from(usedSet).filter(p => p >= PORT_MIN && p <= PORT_MAX).sort((a,b)=>a-b);
+    const free=[]; for(let p=PORT_MIN;p<=PORT_MAX;p++) if(!usedSet.has(p)) free.push(p);
+    return send(200,{
+      ok:true,
+      warm:listWarm(false).length,
+      matches:runningMatchesCount(),
+      total:listGameContainers(false).length,
+      targetWarm: Math.max(0, Math.min(WARM_CAP, MAX_TOTAL - runningMatchesCount())),
+      ports: { used, free, range:[PORT_MIN,PORT_MAX] },
+      caps: { total:MAX_TOTAL, matches:MATCH_CAP, warmMax:WARM_CAP }
+    });
+  }
+
+  // NEUER ENDPUNKT: /matches
+  if (req.method==="GET" && req.url==="/matches"){
+    const matches = listMatches(false);
+    const fetchPromises = matches.map(m => {
+        return fetchMatchDetails(m.id, m);
+    });
+
+    // Asynchron alle Details der Matches sammeln
+    Promise.all(fetchPromises)
+    .then(detailsArray => {
+      // Filtert alle Matches, die erfolgreich einen Port und eine TeamsConfig haben
+      const matchInfos = detailsArray.filter(details =>
+         details.port && details.name && details.teamsConfigBase64
+      ).map(details => ({
+           containerId: details.containerId,
+           name: details.name,
+           port: details.port,
+           teamsConfigBase64: details.teamsConfigBase64,
+      }));
+
+      return send(200, { ok: true, matches: matchInfos });
+    })
+    .catch(e => {
+      console.error("[matches] Error fetching details:", e.message);
+      return send(500, { ok: false, error: "Failed to fetch match details" });
+    });
+
+    return;
+  }
+
+  if (req.method==="POST" && req.url==="/create-match"){
+    let body=""; req.on("data",c=>body+=c);
+    req.on("end", async ()=>{
+      try{
+        const { mapId, teamsConfigBase64 } = JSON.parse(body||"{}");
+        if(!mapId) throw new Error("mapId missing");
+        if(!teamsConfigBase64) throw new Error("teamsConfigBase64 missing");
+
+        // 1) Warm → Match (STANDARD-FALL: Priorität)
+        const fromPool = await assignWarmToMatch({ mapId, teamsConfigBase64 });
+        if (fromPool) return send(201,{ ok:true, ...fromPool, fromPool:true });
+
+        // 2) Cold Start (FALLBACK/NOTFALL: nur wenn Warm Pool leer)
+        const cold = await startMatchCold({ mapId, teamsConfigBase64 });
+        return send(201,{ ok:true, ...cold, fromPool:false });
+
+      }catch(e){
+        const code = e.message.includes("cap reached") || e.message.includes("no free ports") ? 429 : 400;
+        return send(code,{ ok:false, error:e.message });
+      }
+    });
+    return;
+  }
+
+  if (req.method==="POST" && req.url==="/end-match"){
+    let body=""; req.on("data",c=>body+=c);
+    req.on("end", ()=>{
+      try{
+        const { name, port } = JSON.parse(body||"{}");
+
+        // rmContainer löscht jetzt auch den Cache-Eintrag
+        const ok = name ? rmContainer(name) :
+          (port ? (rmContainer((listGameContainers(true).find(c=>(c.ports||"").includes(`:${Number(port)}->25565`))||{}).id||"")) : false);
+
+        ensureWarmPool();
+        return send(ok?200:404,{ ok });
+      } catch(e){ return send(400,{ ok:false, error:e.message }); }
+    });
+    return;
+  }
+
+  return send(404,{ ok:false, error:"Not Found" });
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(
-    `[orchestrator] listening on ${HOST}:${PORT} (range ${PORT_MIN}-${PORT_MAX})`
-  );
+server.listen(PORT, HOST, ()=>{
+  console.log(`[orchestrator] listening on ${HOST}:${PORT} | caps: total=4, matches=4, warm<=2 | ports=${PORT_MIN}-${PORT_MAX}`);
 });

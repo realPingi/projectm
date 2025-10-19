@@ -40,3 +40,7 @@ commands:
     description: Toggle spectator mode.
     usage: /<command>
     permission: bukkit.command.op.name
+  assignmatch:
+    description: Control command for Orchestrator
+    usage: /assignmatch <matchId> <mapId> <teamsB64>
+    permission: op

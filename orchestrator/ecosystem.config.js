@@ -26,7 +26,6 @@ module.exports = {
         ORCH_PORT: 4000,
         ORCH_HOST: "0.0.0.0",
         DOCKER_BIN: "/usr/bin/docker",
-        GAME_PING_HOST: "172.17.0.1",
         READY_TIMEOUT_MS: 60000,
         PING_TIMEOUT_MS: 1500,
       },
