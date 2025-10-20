@@ -1,8 +1,11 @@
 package com.yalcinkaya.lobby.queue;
 
-import com.yalcinkaya.lobby.queue.queues.SoloQueue5v5;
+import com.yalcinkaya.lobby.queue.queues.PartyQueue;
+import com.yalcinkaya.lobby.queue.queues.SoloQueue;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import lombok.Getter;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Villager;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -11,10 +14,12 @@ import java.util.UUID;
 public class QueueManager {
 
     private final HashMap<UUID, Queue> queues = new HashMap<>();
-    private final SoloQueue5v5 soloQueue5v5 = new SoloQueue5v5();
+    private final SoloQueue soloQueue = new SoloQueue();
+    private final PartyQueue partyQueue = new PartyQueue();
 
     public void loadQueues() {
-        registerQueue(soloQueue5v5);
+        registerQueue(soloQueue);
+        registerQueue(partyQueue);
     }
 
     public void registerQueue(Queue queue) {
@@ -28,5 +33,17 @@ public class QueueManager {
 
     public void unqueue(Queueable queueable) {
         queues.values().forEach(queue -> queue.unqueue(queueable));
+    }
+
+    public boolean isEntryDummy(Entity entity) {
+        if (entity instanceof Villager villager) {
+            return queues.values().stream().anyMatch(queue -> villager.hasMetadata(queue.getName()));
+        }
+
+        return false;
+    }
+
+    public Queue getFromDummy(Villager villager) {
+        return queues.values().stream().filter(queue -> villager.hasMetadata(queue.getName())).findFirst().orElse(null);
     }
 }

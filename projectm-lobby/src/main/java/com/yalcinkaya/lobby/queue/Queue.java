@@ -5,17 +5,23 @@ import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.MessageType;
-import com.yalcinkaya.lobby.util.QueueUtil;
+import eu.decentsoftware.holograms.api.DHAPI;
+import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.metadata.FixedMetadataValue;
 
-import java.awt.*;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,6 +31,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * A set containing the queued {@link Queueable}s.
      */
     protected final Set<T> queue = new HashSet<>();
+
     /**
      * The associated {@link UUID} of this queue.
      */
@@ -32,9 +39,16 @@ public abstract class Queue<T extends Queueable> implements Runnable {
     private final UUID identifier = UUID.randomUUID();
 
     /**
+     * The physical entry point of this queue.
+     */
+    @Getter
+    private final Entry entry = new Entry();
+
+    /**
      * Schedules {@link #run()}.
      */
     public void init() {
+        entry.open();
         Bukkit.getScheduler().runTaskTimer(Lobby.getInstance(), this, 0, 1);
     }
 
@@ -50,6 +64,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         } else {
             onMatchNotFound();
         }
+        entry.update();
     }
 
     /**
@@ -128,26 +143,6 @@ public abstract class Queue<T extends Queueable> implements Runnable {
     }
 
     /**
-     * @return the amount of players that have been matched by this queue.
-     */
-    public int getIngame() {
-        return 0;
-    }
-
-    /**
-     * @return the display material of this queue.
-     */
-    public abstract Material getDisplayMaterial();
-
-    /**
-     * @return an {@link ItemStack} containing information about this queue.
-     * @seetag {@link QueueUtil#buildIcon(Queue queue)}
-     */
-    public ItemStack getIcon() {
-        return QueueUtil.buildIcon(this);
-    }
-
-    /**
      * @return the name of this queue.
      */
     public abstract String getName();
@@ -156,18 +151,18 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * Toggles the queue state of a {@link Queueable} depending on a {@link ClickType} input.
      *
      * @param sender    the {@link LobbyUser} sending the request.
-     * @param clickType the {@link ClickType} involved in the request.
+     * @param crouching the {@link Boolean} involved in the request.
      */
-    public void accept(LobbyUser sender, ClickType clickType) {
-        if (clickType == ClickType.LEFT) {
+    public void accept(LobbyUser sender, boolean crouching) {
+        if (crouching) {
             if (isQueued(sender)) {
                 T queueable = find(sender);
                 unqueue(queueable);
                 queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
             } else {
-                sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued for ", getName(), ChatColor.GRAY + "."));
+                sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued."));
             }
-        } else if (clickType == ClickType.RIGHT) {
+        } else {
             if (!isQueued(sender)) {
                 T queueable = queuebalize(sender);
                 if (queueable == null) {
@@ -194,5 +189,43 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @return a {@link Queueable} of type {@link T}
      */
     public abstract T queuebalize(LobbyUser user);
+
+
+    public class Entry {
+        private Hologram hologram;
+        @Getter
+        private Villager dummy;
+
+        public void open() {
+            String hologramName = getName().replace(" ", "_");
+
+            hologram = DHAPI.createHologram(
+                    hologramName,
+                    getPhysicalEntry().clone().add(0, 3, 0),
+                    List.of(
+                            ChatColor.GOLD + "--- " + getName() + " ---",
+                            ChatColor.GRAY + "Queuing >> " + ChatColor.GOLD + getQueued()
+                    )
+            );
+            dummy = (Villager) getPhysicalEntry().getWorld().spawnEntity(getPhysicalEntry(), EntityType.VILLAGER);
+            dummy.setAdult();
+            dummy.setVillagerType(Villager.Type.SAVANNA);
+            dummy.setProfession(Villager.Profession.CARTOGRAPHER);
+            dummy.setAI(false);
+            dummy.setInvulnerable(true);
+            dummy.setSilent(true);
+            dummy.setGravity(false);
+            dummy.setPersistent(true);
+            dummy.setMetadata(getName(), new FixedMetadataValue(Lobby.getInstance(), null));
+        }
+
+        public void update() {
+            DHAPI.setHologramLine(hologram, 1, ChatColor.GRAY + "Queuing >> " + ChatColor.GOLD + getQueued());
+        }
+
+    }
+
+    public abstract Location getPhysicalEntry();
+
 
 }

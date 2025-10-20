@@ -4,12 +4,14 @@ import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SoloQueue5v5 extends Queue<LobbyUser> {
+public class SoloQueue extends Queue<LobbyUser> {
     private static final int MIN = 1;
 
     @Override
@@ -43,11 +45,6 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
     }
 
     @Override
-    public Material getDisplayMaterial() {
-        return Material.ENDER_EYE;
-    }
-
-    @Override
     public String getName() {
         return "Solo Queue";
     }
@@ -56,4 +53,10 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
     public LobbyUser queuebalize(LobbyUser user) {
         return user;
     }
+
+    @Override
+    public Location getPhysicalEntry() {
+        return new Location(Bukkit.getWorld("world"), 2.5, -2, 12.5, -180, 0);
+    }
+
 }

@@ -1,8 +1,10 @@
 package com.yalcinkaya.lobby.user;
 
+import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queueable;
 import lombok.Data;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -15,7 +17,6 @@ import java.util.UUID;
 public class LobbyUser implements Queueable {
 
     private UUID uuid;
-    private Party party;
 
     public LobbyUser(UUID uuid) {
         this.uuid = uuid;
@@ -31,5 +32,9 @@ public class LobbyUser implements Queueable {
     @Override
     public Set<UUID> getUUIDs() {
         return new HashSet<>(Collections.singleton(uuid));
+    }
+
+    public Party getParty() {
+        return Lobby.getInstance().getPartyManager().getParty(this);
     }
 }

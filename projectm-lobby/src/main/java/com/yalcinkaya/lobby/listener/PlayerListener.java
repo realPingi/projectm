@@ -2,22 +2,23 @@ package com.yalcinkaya.lobby.listener;
 
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchLookupService;
+import com.yalcinkaya.lobby.queue.Queue;
+import com.yalcinkaya.lobby.queue.QueueManager;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.MessageType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRecipeDiscoverEvent;
+import org.bukkit.event.player.*;
 
 public class PlayerListener implements Listener {
 
@@ -29,11 +30,6 @@ public class PlayerListener implements Listener {
             Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
             player.teleport(new Location(player.getWorld(), 0, 0, 0));
             LobbyUtil.giveLobbyItems(player);
-
-            MatchLookupService lookup = new MatchLookupService();
-            if (lookup.isPlayerInAnyMatch(player.getUniqueId())) {
-                player.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Your match ist still running. Use: ", "/reconnect"));
-            }
         }, 1);
     }
 
@@ -70,6 +66,11 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent event) {
         event.setCancelled(true);
     }
 }

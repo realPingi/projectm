@@ -1,10 +1,13 @@
 package com.yalcinkaya.lobby;
 
+import com.yalcinkaya.lobby.commands.PartyCommand;
 import com.yalcinkaya.lobby.commands.ReconnectCommand;
 import com.yalcinkaya.lobby.hotbar.HotbarManager;
 import com.yalcinkaya.lobby.listener.HotbarListener;
 import com.yalcinkaya.lobby.listener.PlayerListener;
+import com.yalcinkaya.lobby.listener.QueueListener;
 import com.yalcinkaya.lobby.net.MatchStarter;
+import com.yalcinkaya.lobby.party.PartyManager;
 import com.yalcinkaya.lobby.queue.QueueManager;
 import com.yalcinkaya.lobby.user.LobbyUserManager;
 import lombok.Getter;
@@ -28,12 +31,15 @@ public class Lobby extends JavaPlugin {
     @Getter
     private final QueueManager queueManager = new QueueManager();
     @Getter
-    private HotbarManager hotbarManager;
+    private HotbarManager hotbarManager = new HotbarManager();
+    @Getter
+    private PartyManager partyManager = new PartyManager();
     @Getter
     private final LobbyUserManager userManager = new LobbyUserManager();
 
     private final PlayerListener playerListener = new PlayerListener();
     private final HotbarListener hotbarListener = new HotbarListener();
+    private final QueueListener queueListener = new QueueListener();
     private final PluginManager pluginManager = getServer().getPluginManager();
 
     @Getter
@@ -50,12 +56,12 @@ public class Lobby extends JavaPlugin {
 
         pluginManager.registerEvents(playerListener, this);
         pluginManager.registerEvents(hotbarListener, this);
+        pluginManager.registerEvents(queueListener, this);
 
         this.getCommand("reconnect").setExecutor(new ReconnectCommand());
+        this.getCommand("party").setExecutor(new PartyCommand());
 
         queueManager.loadQueues();
-
-        hotbarManager = new HotbarManager(); // need to load queues first
 
         World world = Bukkit.getWorld("world");
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);

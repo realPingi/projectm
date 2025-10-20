@@ -24,7 +24,6 @@ public class HotbarListener implements Listener {
     @EventHandler
     public void onHotbarInteract(PlayerInteractEvent event) {
         HotbarManager hotbarManager = Lobby.getInstance().getHotbarManager();
-        Player player = event.getPlayer();
         ItemStack item = event.getItem();
         Action action = event.getAction();
         if (item != null && acceptedActions.contains(action) && hotbarManager.isHotbarGUIItem(item)) {

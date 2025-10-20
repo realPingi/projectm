@@ -10,8 +10,8 @@ import java.util.Set;
 @Getter
 public class HotbarManager {
 
-    private final QueueHotbarGUI queueHotbarGUI = new QueueHotbarGUI();
-    private final Set<HotbarGUI> hotbarGUIs = Set.of(queueHotbarGUI);
+    private final LobbyHotbarGUI lobbyHotbarGUI = new LobbyHotbarGUI();
+    private final Set<HotbarGUI> hotbarGUIs = Set.of(lobbyHotbarGUI);
 
     public boolean isHotbarGUIItem(ItemStack itemStack) {
         return hotbarGUIs.stream().anyMatch(hotbarGUI -> hotbarGUI.contains(itemStack));

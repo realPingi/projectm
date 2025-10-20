@@ -2,10 +2,15 @@ name: projectm-lobby
 main: com.yalcinkaya.lobby.Lobby
 version: 1.0
 api-version: 1.21
-depend: [ TAB ]
+depend: [ TAB, DecentHolograms ]
 
 commands:
   reconnect:
     description: Reconnect to a running match.
     usage: /<command>
+    aliases: [ r ]
+  party:
+    description: Manages your party.
+    usage: /<command> [create|invite|join|leave]
+    aliases: [ p ]
 
