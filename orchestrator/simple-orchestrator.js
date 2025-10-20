@@ -271,8 +271,9 @@ async function rconSend(host, port, pass, cmd, timeoutMs=8000) {
 
 /* ─── Docker run ─── */
 function dockerRunArgs({ name, hostGamePort, hostRconPort, envs=[] }) {
+  // FIX: Entferne --rm, um konsistentes manuelles Aufräumen zu erzwingen
   return [
-    "run","-d","--rm","--pull=missing",
+    "run","-d","--pull=missing", // <-- --rm ENTFERNT
     "--label", MANAGED_LABEL,
     "--name", name,
     "-p", `${hostGamePort}:25565`,
@@ -389,15 +390,17 @@ async function ensureWarmPool(){
    - KRITISCH: Entfernt Player Locks, wenn der Container nicht mehr existiert.
 */
 function cleanup({ checkStale=true } = {}) {
-  const allRunningIds = new Set(psManaged(false).map(c => c.id));
+  // FIX: Muss alle Container (Up/Exited) holen, um Exited zu entfernen und Up zu prüfen
+  const allContainers = psManaged(true);
+  const allRunningIds = new Set(allContainers.filter(c => /^Up\s/.test(c.status||"")).map(c => c.id));
   let removed = 0;
   let locksRemoved = 0;
 
-  // 1. Entfernt Player Locks, deren Container nicht mehr laufen
+  // 1. Locks aufräumen
   for (const [pid, status] of playerLocks.entries()) {
       if (typeof status === 'string' && status.startsWith(MATCH_LOCK_PREFIX)) {
           const containerId = status.substring(MATCH_LOCK_PREFIX.length);
-          // Wenn der Container nicht in der Liste der aktuell laufenden IDs ist
+          // Entferne den Lock, wenn der Container nicht mehr läuft
           if (!allRunningIds.has(containerId)) {
               playerLocks.delete(pid);
               locksRemoved++;
@@ -405,18 +408,17 @@ function cleanup({ checkStale=true } = {}) {
       }
   }
 
-  // 2. Entfernt Container basierend auf Zustand (ursprüngliche Logik)
-  const allContainers = psManaged(true);
-
+  // 2. Container aufräumen
   for (const c of allContainers) {
-    const isUp = /^Up\s/.test(c.status||"");
-    // Entfernt beendete oder fehlgeschlagene Container
+    const isUp = allRunningIds.has(c.id);
+
+    // a) Entfernt BEENDETE Container (Status != "Up ")
     if (!isUp) {
         if (rmContainer(c.id)) removed++;
         continue;
     }
 
-    // Entfernt laufende Matches ohne Ports (Stale)
+    // b) Entfernt laufende Matches ohne Ports (Stale Check)
     if (checkStale && c.name?.startsWith("match-")) {
       const det = fetchMatchDetails(c.id, c);
       const bothClosed = (!det.port || !det.rconPort);
@@ -436,7 +438,7 @@ function cleanup({ checkStale=true } = {}) {
 
 /* Periodic maintenance */
 setInterval(ensureWarmPool, 3000);
-// Führt Cleanup für Locks häufiger aus, da sie kritisch sind
+// Führt Cleanup für Locks und beendete Container häufiger aus
 setInterval(()=>cleanup({checkStale:false}), 10_000);
 setInterval(()=>gcExpiredLocks(), 5_000);             // TTL-GC für Player-Locks
 setInterval(()=>gcIdempotency(), 5_000);              // GC Idempotency

@@ -21,13 +21,12 @@ public class QueueUtil {
         final List<String> desc = new ArrayList<>();
 
         int queuing = queue.getQueuedPlayers();
-        int ingame = queue.getIngame();
 
         desc.add("");
         desc.add("<italic:false><gray>Queuing" + " >> <gray><light_purple>" + queuing + "<light_purple>");
         desc.add("");
-        desc.add("<italic:false><light_purple>Left<light_purple> <gray>click to queue<gray>");
-        desc.add("<italic:false><light_purple>Shift<light_purple> <gray>click to leave queue<gray>");
+        desc.add("<italic:false><light_purple>Right<light_purple> <gray>click to queue<gray>");
+        desc.add("<italic:false><light_purple>Left<light_purple> <gray>click to unqueue<gray>");
         return desc;
     }
 
