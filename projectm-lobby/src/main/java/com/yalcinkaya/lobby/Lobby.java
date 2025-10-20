@@ -1,9 +1,9 @@
 package com.yalcinkaya.lobby;
 
 import com.yalcinkaya.lobby.commands.ReconnectCommand;
-import com.yalcinkaya.lobby.listener.MenuListener;
+import com.yalcinkaya.lobby.hotbar.HotbarManager;
+import com.yalcinkaya.lobby.listener.HotbarListener;
 import com.yalcinkaya.lobby.listener.PlayerListener;
-import com.yalcinkaya.lobby.menu.MenuManager;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.QueueManager;
 import com.yalcinkaya.lobby.user.LobbyUserManager;
@@ -28,12 +28,12 @@ public class Lobby extends JavaPlugin {
     @Getter
     private final QueueManager queueManager = new QueueManager();
     @Getter
-    private final MenuManager menuManager = new MenuManager();
+    private HotbarManager hotbarManager;
     @Getter
     private final LobbyUserManager userManager = new LobbyUserManager();
 
     private final PlayerListener playerListener = new PlayerListener();
-    private final MenuListener menuListener = new MenuListener();
+    private final HotbarListener hotbarListener = new HotbarListener();
     private final PluginManager pluginManager = getServer().getPluginManager();
 
     @Getter
@@ -49,13 +49,13 @@ public class Lobby extends JavaPlugin {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 
         pluginManager.registerEvents(playerListener, this);
-        pluginManager.registerEvents(menuListener, this);
+        pluginManager.registerEvents(hotbarListener, this);
 
         this.getCommand("reconnect").setExecutor(new ReconnectCommand());
 
-
         queueManager.loadQueues();
-        menuManager.loadMenus();
+
+        hotbarManager = new HotbarManager(); // need to load queues first
 
         World world = Bukkit.getWorld("world");
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);

@@ -1,6 +1,5 @@
 package com.yalcinkaya.lobby.user;
 
-import com.yalcinkaya.lobby.menu.Menu;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queueable;
 import lombok.Data;
@@ -17,7 +16,6 @@ public class LobbyUser implements Queueable {
 
     private UUID uuid;
     private Party party;
-    private Menu menu;
 
     public LobbyUser(UUID uuid) {
         this.uuid = uuid;

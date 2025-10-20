@@ -1,4 +1,4 @@
-// warm-pool-orchestrator.js — lean pool, fast warm-assign, auto-cleanup
+// warm-pool-orchestrator.js — lean pool, fast warm-assign, auto-cleanup (+ locks, idempotency, visibility wait)
 "use strict";
 
 const http = require("http");
@@ -28,6 +28,15 @@ const GAME_PING_HOST   = process.env.GAME_PING_HOST || "127.0.0.1";
 /* ─── State ─── */
 // Merkt sich Teams-B64 für warm->match Assigns (da Env nachträglich fehlt)
 const warmAssignedCache = new Map();
+
+/* 🔒 Player-Locks gegen Race-Window */
+const playerLocks = new Map();               // Map<playerId, expiresAtMs>
+const PLAYER_LOCK_TTL_MS   = 5_000;          // in-request
+const SUCCESS_LOCK_TTL_MS  = 8_000;          // nach Erfolg (überlappt bis /matches sicher sichtbar ist)
+
+/* 🧾 Idempotency (gegen doppelte create-match) */
+const idempCache = new Map();                // Map<key, { expiresAt, responseJson }>
+const IDEMP_TTL_MS = 30_000;
 
 /* ─── Utils ─── */
 const sh = (cmd, args, opts={}) => {
@@ -129,6 +138,76 @@ function fetchMatchDetails(containerId, initial = {}) {
   return { containerId, name: initial.name, port: hp, rconPort: rp, teamsConfigBase64: teamsB64 };
 }
 
+/* 🔎 Spieler-Extraktion (robust, beliebige Strukturen) */
+function extractPlayerIds(teamsB64) {
+  if (!teamsB64) return [];
+  let root;
+  try {
+    const s = Buffer.from(String(teamsB64), "base64").toString("utf8");
+    root = JSON.parse(s);
+  } catch { return []; }
+
+  const out = new Set();
+  const UUID_ANY = /\b[0-9a-fA-F]{32}\b|\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g;
+  const norm = s => s.replace(/-/g,"").toLowerCase();
+
+  const visit = (node) => {
+    if (node == null) return;
+
+    if (typeof node === "string") {
+      const m = node.match(UUID_ANY);
+      if (m) for (const hit of m) out.add(norm(hit));
+      return;
+    }
+    if (typeof node === "number" || typeof node === "boolean") return;
+
+    if (Array.isArray(node)) { for (const el of node) visit(el); return; }
+
+    if (typeof node === "object") {
+      for (const key of ["id","uuid","player","playerId"]) {
+        if (key in node && typeof node[key] === "string") {
+          const m = node[key].match(UUID_ANY);
+          if (m) for (const hit of m) out.add(norm(hit));
+        }
+      }
+      for (const k of Object.keys(node)) visit(node[k]);
+    }
+  };
+
+  visit(root);
+  return Array.from(out);
+}
+
+/* 🔒 Locks + Idempotency GC */
+function gcExpiredLocks(now=Date.now()) {
+  for (const [pid, exp] of playerLocks.entries()) if (exp <= now) playerLocks.delete(pid);
+}
+function gcIdempotency(now=Date.now()) {
+  for (const [k, v] of idempCache.entries()) if (v.expiresAt <= now) idempCache.delete(k);
+}
+function playersInActiveMatches() {
+  const set = new Set();
+  for (const m of listMatches(false)) {
+    const d = fetchMatchDetails(m.id, m);
+    for (const pid of extractPlayerIds(d.teamsConfigBase64)) set.add(pid);
+  }
+  return set;
+}
+
+/* Sichtbarkeits-Wait: erst antworten, wenn Match in /matches sichtbar ist */
+async function waitMatchVisibleByName(name, timeoutMs = 5000, stepMs = 150) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const hit = listMatches(false).find(c => c.name === name);
+    if (hit) {
+      const d = fetchMatchDetails(hit.id, hit);
+      if (d.port && d.teamsConfigBase64) return true;
+    }
+    await new Promise(r => setTimeout(r, stepMs));
+  }
+  return false;
+}
+
 /* ─── RCON (robust) ─── */
 async function rconSend(host, port, pass, cmd, timeoutMs=8000) {
   return new Promise((resolve, reject) => {
@@ -174,7 +253,7 @@ async function rconSend(host, port, pass, cmd, timeoutMs=8000) {
 }
 
 /* ─── Docker run ─── */
-function dockerRunArgs({ name, hostGamePort, hostRconPort, envs=[], poolMode=false }) {
+function dockerRunArgs({ name, hostGamePort, hostRconPort, envs=[] }) {
   return [
     "run","-d","--rm","--pull=missing",
     "--label", MANAGED_LABEL,
@@ -201,7 +280,6 @@ function startWarmContainer(){
       clearTimeout(t);
       if (timed || code!==0) return reject(new Error("docker run (warm) failed"));
       const id = (out.trim().split("\n").pop()||"").trim(); if (!id) return reject(new Error("no container id (warm)"));
-      // Nur Game-Port warten (RCON ist für WarmAssign; dort gibt's schnelles Retry)
       const ready = await waitPort(GAME_PING_HOST, hostGamePort, READY_TIMEOUT_MS);
       if (!ready){ rmContainer(id); return reject(new Error("warm not ready")); }
       resolve({ id, name, port: hostGamePort, rconPort: hostRconPort });
@@ -246,10 +324,10 @@ async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
   if (!details.port || !details.rconPort) return null;
 
   const matchId = uuidv4();
-
-  // Fast-path: RCON sofort probieren, mit kurzen Retries (weil RCON oft 0.5–2s nach Game bereit ist)
-  const trySend = async () => rconSend(GAME_PING_HOST, details.rconPort, RCON_PASS,
-    `assignmatch ${matchId} ${mapId} ${teamsConfigBase64}`, 6000);
+  const trySend = async () => rconSend(
+    GAME_PING_HOST, details.rconPort, RCON_PASS,
+    `assignmatch ${matchId} ${mapId} ${teamsConfigBase64}`, 6000
+  );
 
   let ok=false, lastErr=null;
   for (const delay of [0, 200, 400, 800]) {
@@ -289,7 +367,7 @@ async function ensureWarmPool(){
 
 /* Cleanup:
    - Entfernt alle managed Container, deren Status NICHT mit "Up " beginnt.
-   - Optional: entfernt "Up" Matches, die auf keinem Game/RCON-Port antworten (stale) nach kurzer Prüfung.
+   - Optional: entfernt "Up" Matches ohne Ports (stale).
 */
 function cleanup({ checkStale=true } = {}) {
   const all = psManaged(true);
@@ -301,8 +379,6 @@ function cleanup({ checkStale=true } = {}) {
 
     if (checkStale && c.name?.startsWith("match-")) {
       const det = fetchMatchDetails(c.id, c);
-      const gameOk = det.port ? false : false; // if no port -> suspicious
-      // Wenn Ports fehlen oder beide Ports in kurzer Probe nicht erreichbar → weg
       const bothClosed = (!det.port || !det.rconPort);
       if (bothClosed) { if (rmContainer(c.id)) removed++; continue; }
     }
@@ -313,12 +389,14 @@ function cleanup({ checkStale=true } = {}) {
 /* Periodic maintenance */
 setInterval(ensureWarmPool, 3000);
 setInterval(()=>cleanup({checkStale:false}), 15_000); // schnelle Entsorgung beendeter Container
+setInterval(()=>gcExpiredLocks(), 5_000);             // TTL-GC für Player-Locks
+setInterval(()=>gcIdempotency(), 5_000);              // GC Idempotency
 ensureWarmPool();
 
 /* ─── HTTP ─── */
 const server = http.createServer((req,res)=>{
   res.setHeader("Access-Control-Allow-Origin","*");
-  res.setHeader("Access-Control-Allow-Headers","content-type");
+  res.setHeader("Access-Control-Allow-Headers","content-type,x-idempotency-key");
   if (req.method==="OPTIONS"){ res.writeHead(204); return res.end(); }
   const send = (code,obj)=>{ res.writeHead(code,{"content-type":"application/json"}); res.end(JSON.stringify(obj)); };
 
@@ -338,24 +416,78 @@ const server = http.createServer((req,res)=>{
   }
 
   if (req.method==="GET" && req.url==="/matches"){
+    gcExpiredLocks();
     const matches = listMatches(false).map(m => fetchMatchDetails(m.id, m))
       .filter(d => d.port && d.name && d.teamsConfigBase64);
-    return send(200, { ok:true, matches });
+    const pendingPlayers = Array.from(playerLocks.keys());
+    return send(200, { ok:true, matches, pendingPlayers });
+  }
+
+  if (req.method==="GET" && req.url==="/in-use"){
+    gcExpiredLocks();
+    const active = Array.from(playersInActiveMatches());
+    const pending = Array.from(playerLocks.keys());
+    const inUse = Array.from(new Set([...pending, ...active]));
+    return send(200, { ok:true, inUse, pending, active });
   }
 
   if (req.method==="POST" && req.url==="/create-match"){
     let body=""; req.on("data",c=>body+=c);
     req.on("end", async ()=>{
       try{
-        const { mapId, teamsConfigBase64 } = JSON.parse(body||"{}");
+        const parsed = JSON.parse(body||"{}");
+        const { mapId, teamsConfigBase64, players } = parsed;
         if(!mapId) throw new Error("mapId missing");
-        if(!teamsConfigBase64) throw new Error("teamsConfigBase64 missing");
+        if(!teamsConfigBase64 && !players) throw new Error("teamsConfigBase64 or players missing");
 
-        const fromPool = await assignWarmToMatch({ mapId, teamsConfigBase64 });
-        if (fromPool) return send(201,{ ok:true, ...fromPool, fromPool:true });
+        // 🧾 Idempotency-Key (Header bevorzugt, sonst Body)
+        const idempKey = (req.headers["x-idempotency-key"] ? String(req.headers["x-idempotency-key"]) :
+                          (typeof parsed.idempotencyKey === "string" ? parsed.idempotencyKey : null));
+        if (idempKey && idempCache.has(idempKey)) {
+          const cached = idempCache.get(idempKey);
+          return send(200, cached.responseJson);
+        }
 
-        const cold = await startMatchCold({ mapId, teamsConfigBase64 });
-        return send(201,{ ok:true, ...cold, fromPool:false });
+        // 🔒 Sofort-Lock (vor dem ersten await)
+        gcExpiredLocks();
+        const candidateIdsRaw = (Array.isArray(players) && players.length ? players.map(String) : extractPlayerIds(teamsConfigBase64));
+        const candidateIds = Array.from(new Set(candidateIdsRaw)).filter(Boolean);
+        if (candidateIds.length === 0) {
+          return send(409, { ok:false, error:"no players to lock (provide 'players' or teamsConfig with player IDs)" });
+        }
+        const active = playersInActiveMatches();
+        const conflicts = candidateIds.filter(pid => playerLocks.has(pid) || active.has(pid));
+        if (conflicts.length) return send(409, { ok:false, error:"players already in queue/match", conflicts });
+
+        const now = Date.now();
+        for (const pid of candidateIds) playerLocks.set(pid, now + PLAYER_LOCK_TTL_MS);
+
+        // Match bauen + Sichtbarkeit abwarten
+        let resp = null, success = false, matchName = null;
+        try {
+          resp = await assignWarmToMatch({ mapId, teamsConfigBase64 });
+          if (!resp) resp = await startMatchCold({ mapId, teamsConfigBase64 });
+          success = !!resp;
+          matchName = resp?.name || null;
+
+          if (success && matchName) {
+            await waitMatchVisibleByName(matchName, 5000, 150); // schließt Restfenster
+          }
+        } catch (e) {
+          // fall-through to finally
+        } finally {
+          if (!success) {
+            for (const pid of candidateIds) playerLocks.delete(pid);
+          } else {
+            const exp = Date.now() + SUCCESS_LOCK_TTL_MS;
+            for (const pid of candidateIds) playerLocks.set(pid, exp);
+          }
+        }
+
+        const payload = { ok:true, ...resp, fromPool: !!resp?.containerId && resp?.name?.startsWith("match-") };
+        if (idempKey) idempCache.set(idempKey, { expiresAt: Date.now() + IDEMP_TTL_MS, responseJson: payload });
+        return send(201, payload);
+
       }catch(e){
         const code = /cap reached|no free ports/.test(e.message) ? 429 : 400;
         return send(code,{ ok:false, error:e.message });
@@ -390,4 +522,5 @@ const server = http.createServer((req,res)=>{
 server.listen(PORT, HOST, ()=>{
   console.log(`[orchestrator] listening on ${HOST}:${PORT} | caps: total=${MAX_TOTAL}, matches=${MATCH_CAP}, warm<=${WARM_CAP} | ports=${PORT_MIN}-${PORT_MAX}`);
 });
+
 

@@ -1,19 +1,13 @@
 package com.yalcinkaya.lobby.util;
 
-import com.yalcinkaya.lobby.menu.Menu;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.queue.Queueable;
-import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class QueueUtil {
-
-    public static <T extends Queueable> void addQueueItem(Menu menu, int slot, Queue<T> queue) {
-        menu.setItem(slot, queue.getIcon(), queue::accept);
-    }
 
     public static ItemStack buildIcon(Queue queue) {
         return ItemBuilder.of(queue.getDisplayMaterial())

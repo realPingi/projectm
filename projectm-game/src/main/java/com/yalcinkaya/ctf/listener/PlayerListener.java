@@ -77,6 +77,7 @@ public class PlayerListener implements Listener {
                         CTFUtil.clearPlayer(player);
                         CTFKit.setKit(user, kit);
                         CTFUtil.equipPlayer(player);
+                        player.sendMessage(CTFUtil.getCTFMessage(MessageType.INFO, ChatColor.GRAY + "You selected ", kit.getName(), ChatColor.GRAY + "."));
                     } else {
                         CTFKit.setKit(user, kit);
                     }

@@ -1,12 +1,11 @@
 package com.yalcinkaya.lobby.util;
 
 import com.yalcinkaya.lobby.Lobby;
-import com.yalcinkaya.lobby.menu.Menu;
-import com.yalcinkaya.lobby.menu.MenuManager;
+import com.yalcinkaya.lobby.hotbar.HotbarManager;
+import com.yalcinkaya.lobby.hotbar.QueueHotbarGUI;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -32,9 +31,8 @@ public class LobbyUtil {
     }
 
     public static void giveLobbyItems(Player player) {
-        MenuManager menuManager = Lobby.getInstance().getMenuManager();
-        player.getInventory().clear();
-        player.getInventory().setItem(4, menuManager.getQueueMenuKey());
+        QueueHotbarGUI queueHotbarGUI = Lobby.getInstance().getHotbarManager().getQueueHotbarGUI();
+        queueHotbarGUI.supply(player);
     }
 
     public static String getLobbyMessage(MessageType messageType, String... strings) {

@@ -1,4 +1,4 @@
-package com.yalcinkaya.lobby.menu;
+package com.yalcinkaya.lobby.hotbar;
 
 import com.yalcinkaya.lobby.user.LobbyUser;
 import lombok.AllArgsConstructor;

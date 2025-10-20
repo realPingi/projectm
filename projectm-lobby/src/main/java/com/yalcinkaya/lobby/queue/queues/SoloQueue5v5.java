@@ -44,7 +44,7 @@ public class SoloQueue5v5 extends Queue<LobbyUser> {
 
     @Override
     public Material getDisplayMaterial() {
-        return Material.BLACK_BANNER;
+        return Material.ENDER_EYE;
     }
 
     @Override

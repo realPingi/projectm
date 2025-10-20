@@ -1,8 +1,11 @@
 package com.yalcinkaya.lobby.listener;
 
 import com.yalcinkaya.lobby.Lobby;
+import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.util.LobbyUtil;
+import com.yalcinkaya.lobby.util.MessageType;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,11 +24,16 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         event.setJoinMessage(null);
+        Player player = event.getPlayer();
         Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> {
-            Player player = event.getPlayer();
             Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
             player.teleport(new Location(player.getWorld(), 0, 0, 0));
             LobbyUtil.giveLobbyItems(player);
+
+            MatchLookupService lookup = new MatchLookupService();
+            if (lookup.isPlayerInAnyMatch(player.getUniqueId())) {
+                player.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Your match ist still running. Use: ", "/reconnect"));
+            }
         }, 1);
     }
 

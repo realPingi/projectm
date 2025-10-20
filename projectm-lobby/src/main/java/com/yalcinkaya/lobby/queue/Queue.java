@@ -1,7 +1,6 @@
 package com.yalcinkaya.lobby.queue;
 
 import com.yalcinkaya.lobby.Lobby;
-import com.yalcinkaya.lobby.menu.Menu;
 import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
@@ -13,9 +12,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -160,20 +159,15 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param clickType the {@link ClickType} involved in the request.
      */
     public void accept(LobbyUser sender, ClickType clickType) {
-        Player player = LobbyUtil.getPlayer(sender);
-        Menu menu = sender.getMenu();
-        if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
+        if (clickType == ClickType.LEFT) {
             if (isQueued(sender)) {
                 T queueable = find(sender);
                 unqueue(queueable);
                 queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
-                if (menu != null) {
-                    menu.closeAndOpen(sender);
-                }
             } else {
                 sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued for ", getName(), ChatColor.GRAY + "."));
             }
-        } else {
+        } else if (clickType == ClickType.RIGHT) {
             if (!isQueued(sender)) {
                 T queueable = queuebalize(sender);
                 if (queueable == null) {
@@ -181,15 +175,11 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 }
                 MatchLookupService lookup = new MatchLookupService();
                 if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInAnyMatch)) {
-                    player.closeInventory();
                     sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
                     return;
                 }
                 if (queue(queueable)) {
                     queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
-                    if (sender.getMenu() != null) {
-                        menu.closeAndOpen(sender);
-                    }
                 }
             } else {
                 sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are already queued."));

@@ -1,15 +1,11 @@
 package com.yalcinkaya.lobby.net;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.bukkit.Bukkit;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +17,6 @@ public class MatchLookupService {
     private final Gson gson = new Gson();
 
     public MatchLookupService() {
-        // konservative Timeouts, damit der Command snappy bleibt
         this.http = new OkHttpClient.Builder()
                 .connectTimeout(1500, TimeUnit.MILLISECONDS)
                 .readTimeout(2000, TimeUnit.MILLISECONDS)
@@ -29,23 +24,37 @@ public class MatchLookupService {
                 .build();
     }
 
-    /** Reusable: Ist der Spieler in irgendeinem laufenden Match registriert? */
+    /** Schnellcheck: ist der Spieler pending (Lock) ODER bereits in einem aktiven Match? */
     public boolean isPlayerInAnyMatch(UUID playerId) {
+        final String needle = playerId.toString();
+
+        // 1) Schnell: /in-use (pending + active, aus Orchestrator-Locks)
+        try {
+            InUseResponse iu = fetchInUse();
+            if (iu != null && iu.ok) {
+                if (iu.inUse != null && iu.inUse.contains(needle)) return true;
+                // Falls "inUse" fehlt (sollte nicht), checke pending/active einzeln:
+                if ((iu.pending != null && iu.pending.contains(needle)) ||
+                        (iu.active  != null && iu.active.contains(needle))) return true;
+            }
+        } catch (Exception e) {
+            Bukkit.getLogger().warning("[MatchLookupService] /in-use check failed: " + e.getMessage());
+            // Kein Hard-Fail – wir fallen auf die Match-Liste zurück.
+        }
+
+        // 2) Fallback: aktive Matches abfragen und Players aus TEAMS_CONFIG_B64 decodieren
         return findMatchFor(playerId).isPresent();
     }
 
-    /** Reusable: Liefert das Match (inkl. Port), falls der Spieler registriert ist. */
+    /** Liefert das Match (inkl. Port), falls der Spieler registriert ist (aktive Matches). */
     public Optional<MatchInfo> findMatchFor(UUID playerId) {
         try {
             List<MatchInfo> matches = fetchMatches();
             if (matches == null || matches.isEmpty()) return Optional.empty();
 
-            String needle = playerId.toString();
             for (MatchInfo m : matches) {
-                if (m.teamsConfigBase64 == null || m.port <= 0) continue;
-                Map<String, List<String>> teams = decodeTeams(m.teamsConfigBase64);
-                if (teams == null || teams.isEmpty()) continue;
-                if (containsPlayer(teams, needle)) return Optional.of(m);
+                if (m.port <= 0) continue;
+                if (m.containsPlayer(playerId)) return Optional.of(m);
             }
             return Optional.empty();
         } catch (Exception e) {
@@ -70,22 +79,17 @@ public class MatchLookupService {
         }
     }
 
-    private Map<String, List<String>> decodeTeams(String b64) {
-        try {
-            byte[] raw = Base64.getDecoder().decode(b64);
-            String json = new String(raw, StandardCharsets.UTF_8);
-            Type type = new TypeToken<Map<String, List<String>>>() {}.getType();
-            return gson.fromJson(json, type);
-        } catch (Exception ignored) {
-            return null;
+    /** /in-use liefert pending + active + vereinigt (inUse) */
+    private InUseResponse fetchInUse() throws IOException {
+        Request req = new Request.Builder()
+                .url(orchestratorUrl + "/in-use")
+                .get()
+                .build();
+        try (Response resp = http.newCall(req).execute()) {
+            if (!resp.isSuccessful()) return null;
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            return gson.fromJson(body, InUseResponse.class);
         }
-    }
-
-    private boolean containsPlayer(Map<String, List<String>> teams, String uuidStr) {
-        for (List<String> list : teams.values()) {
-            if (list != null && list.contains(uuidStr)) return true;
-        }
-        return false;
     }
 
     /* ------------- DTOs ------------- */
@@ -93,6 +97,16 @@ public class MatchLookupService {
     public static class MatchesResponse {
         @SerializedName("ok") public boolean ok;
         @SerializedName("matches") public List<MatchInfo> matches;
+
+        // optional vorhanden (wenn du's im Orchestrator mitsendest)
+        @SerializedName("pendingPlayers") public List<String> pendingPlayers;
+    }
+
+    public static class InUseResponse {
+        @SerializedName("ok") public boolean ok;
+        @SerializedName("inUse")   public List<String> inUse;   // union(pending, active)
+        @SerializedName("pending") public List<String> pending; // nur Locks/Queue
+        @SerializedName("active")  public List<String> active;  // aus laufenden Matches
     }
 
     public static class MatchInfo {
@@ -101,10 +115,83 @@ public class MatchLookupService {
         @SerializedName("port")        public int port;
         @SerializedName("teamsConfigBase64") public String teamsConfigBase64;
 
+        // Cache der normalisierten UUIDs (lowercase, ohne Striche)
+        private transient Set<String> cachedPlayerIdsNorm;
+
+        /** True, wenn der Spieler in den Teams enthalten ist (robust gegen Formatunterschiede). */
+        public boolean containsPlayer(UUID playerId) {
+            if (playerId == null) return false;
+            ensureDecodedPlayers();
+            return cachedPlayerIdsNorm.contains(normalizeUuid(playerId.toString()));
+        }
+
         /** Utility: Velocity-Servername wie in deiner Config */
         public String toVelocityServerName() {
             int gameNumber = port - 25565;
             return "game-" + gameNumber;
         }
+
+        /** einmalig: TEAMS_CONFIG_B64 → JSON → alle UUID-Strings (mit/ohne Striche) einsammeln */
+        private void ensureDecodedPlayers() {
+            if (cachedPlayerIdsNorm != null) return;
+            cachedPlayerIdsNorm = new HashSet<>();
+            if (teamsConfigBase64 == null || teamsConfigBase64.isEmpty()) return;
+
+            try {
+                byte[] raw = Base64.getDecoder().decode(teamsConfigBase64);
+                String json = new String(raw, StandardCharsets.UTF_8);
+                JsonElement root = JsonParser.parseString(json);
+                collectUuidsDeep(root, cachedPlayerIdsNorm);
+            } catch (Exception ignored) {
+                // leer lassen
+            }
+        }
+
+        private static String normalizeUuid(String s) {
+            return s == null ? "" : s.replace("-", "").toLowerCase(Locale.ROOT);
+        }
+
+        // sehr tolerante Erkennung: 32 hex (ohne Striche) ODER 36 mit Strichen
+        private static final java.util.regex.Pattern UUID_ANY =
+                java.util.regex.Pattern.compile("\\b[0-9a-fA-F]{32}\\b|\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b");
+
+        /** traversiert beliebig tief: Arrays, Objekte, Primitive; sammelt alle UUID-ähnlichen Strings */
+        private static void collectUuidsDeep(JsonElement el, Set<String> out) {
+            if (el == null || el.isJsonNull()) return;
+
+            if (el.isJsonPrimitive()) {
+                JsonPrimitive p = el.getAsJsonPrimitive();
+                if (p.isString()) {
+                    String s = p.getAsString();
+                    java.util.regex.Matcher m = UUID_ANY.matcher(s);
+                    while (m.find()) out.add(normalizeUuid(m.group()));
+                }
+                return;
+            }
+
+            if (el.isJsonArray()) {
+                for (JsonElement e : el.getAsJsonArray()) collectUuidsDeep(e, out);
+                return;
+            }
+
+            if (el.isJsonObject()) {
+                JsonObject o = el.getAsJsonObject();
+
+                // häufige Felder direkt prüfen
+                for (String key : Arrays.asList("id", "uuid", "player", "playerId")) {
+                    if (o.has(key) && o.get(key).isJsonPrimitive()) {
+                        String s = o.get(key).getAsString();
+                        java.util.regex.Matcher m = UUID_ANY.matcher(s);
+                        while (m.find()) out.add(normalizeUuid(m.group()));
+                    }
+                }
+
+                // alle Werte traversieren (deckt Maps wie {"t1":[...], "t2":[...]} ab)
+                for (Map.Entry<String, JsonElement> e : o.entrySet()) {
+                    collectUuidsDeep(e.getValue(), out);
+                }
+            }
+        }
     }
+
 }

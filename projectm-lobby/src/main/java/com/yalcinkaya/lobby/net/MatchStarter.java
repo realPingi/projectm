@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class MatchStarter {
 
-    private static final String[] AVAILABLE_MAPS = {"basic", "dust"};
+    private static final String[] AVAILABLE_MAPS = {"basic"};
 
     private final Gson gson = new Gson();
     private final OkHttpClient http = new OkHttpClient.Builder()

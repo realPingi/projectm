@@ -51,7 +51,7 @@ public class PreStageListener extends StageListener {
         event.setCancelled(true);
         ItemStack item = event.getItem();
         if (item != null) {
-            if (item.getType() == Material.ORANGE_SHULKER_BOX) {
+            if (item.getType() == Material.ENDER_CHEST) {
                 event.getPlayer().openInventory(CTF.getInstance().getPlayerListener().getKitInventory());
             }
         }
@@ -75,7 +75,7 @@ public class PreStageListener extends StageListener {
     @Override
     public void setupPlayer(Player player) {
         CTFUtil.teleportPlayerMidMap(CTFUtil.getUser(player.getUniqueId()));
-        player.getInventory().setItem(4, new ItemBuilder(Material.ORANGE_SHULKER_BOX).name(ChatColor.GRAY + "Select " + ChatColor.GOLD + "kit").build());
+        player.getInventory().setItem(4, new ItemBuilder(Material.ENDER_CHEST).name(ChatColor.GOLD + "Select your kit").build());
     }
 
     @Override
