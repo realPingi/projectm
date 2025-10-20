@@ -1,4 +1,4 @@
-// warm-pool-orchestrator.js — lean pool, fast warm-assign, auto-cleanup (+ locks, idempotency, visibility wait)
+// warm-pool-orchestrator.js — Final Fix (Working Locks)
 "use strict";
 
 const http = require("http");
@@ -30,12 +30,13 @@ const GAME_PING_HOST   = process.env.GAME_PING_HOST || "127.0.0.1";
 const warmAssignedCache = new Map();
 
 /* 🔒 Player-Locks gegen Race-Window */
-const playerLocks = new Map();               // Map<playerId, expiresAtMs>
-const PLAYER_LOCK_TTL_MS   = 5_000;          // in-request
-const SUCCESS_LOCK_TTL_MS  = 8_000;          // nach Erfolg (überlappt bis /matches sicher sichtbar ist)
+const playerLocks = new Map();              // Map<playerId, expiresAtMs>
+const PLAYER_LOCK_TTL_MS   = 5_000;          // in-request TTL (wird bei Erfolg permanent)
+const MATCH_LOCK_PREFIX = "match:";         // Marker, um permanente Locks zu identifizieren
+
 
 /* 🧾 Idempotency (gegen doppelte create-match) */
-const idempCache = new Map();                // Map<key, { expiresAt, responseJson }>
+const idempCache = new Map();               // Map<key, { expiresAt, responseJson }>
 const IDEMP_TTL_MS = 30_000;
 
 /* ─── Utils ─── */
@@ -148,6 +149,7 @@ function extractPlayerIds(teamsB64) {
   } catch { return []; }
 
   const out = new Set();
+  // Regex für UUIDs (mit und ohne Bindestriche)
   const UUID_ANY = /\b[0-9a-fA-F]{32}\b|\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g;
   const norm = s => s.replace(/-/g,"").toLowerCase();
 
@@ -164,12 +166,14 @@ function extractPlayerIds(teamsB64) {
     if (Array.isArray(node)) { for (const el of node) visit(el); return; }
 
     if (typeof node === "object") {
+      // Prüft bekannte Schlüssel (player ID im Objekt)
       for (const key of ["id","uuid","player","playerId"]) {
         if (key in node && typeof node[key] === "string") {
           const m = node[key].match(UUID_ANY);
           if (m) for (const hit of m) out.add(norm(hit));
         }
       }
+      // Rekursiver Aufruf für alle Werte im Objekt
       for (const k of Object.keys(node)) visit(node[k]);
     }
   };
@@ -180,16 +184,23 @@ function extractPlayerIds(teamsB64) {
 
 /* 🔒 Locks + Idempotency GC */
 function gcExpiredLocks(now=Date.now()) {
-  for (const [pid, exp] of playerLocks.entries()) if (exp <= now) playerLocks.delete(pid);
+  // Löscht nur temporäre Locks (< now)
+  for (const [pid, exp] of playerLocks.entries()) {
+    if (typeof exp === 'number' && exp <= now) playerLocks.delete(pid);
+  }
 }
+
 function gcIdempotency(now=Date.now()) {
   for (const [k, v] of idempCache.entries()) if (v.expiresAt <= now) idempCache.delete(k);
 }
+
 function playersInActiveMatches() {
   const set = new Set();
-  for (const m of listMatches(false)) {
-    const d = fetchMatchDetails(m.id, m);
-    for (const pid of extractPlayerIds(d.teamsConfigBase64)) set.add(pid);
+  for (const [pid, status] of playerLocks.entries()) {
+    // Zählt Spieler, deren Lock-Wert mit "match:" beginnt (permanente Locks)
+    if (typeof status === 'string' && status.startsWith(MATCH_LOCK_PREFIX)) {
+      set.add(pid);
+    }
   }
   return set;
 }
@@ -201,6 +212,7 @@ async function waitMatchVisibleByName(name, timeoutMs = 5000, stepMs = 150) {
     const hit = listMatches(false).find(c => c.name === name);
     if (hit) {
       const d = fetchMatchDetails(hit.id, hit);
+      // Prüft, ob Port und TeamsConfig verfügbar sind (Match ist initialisiert)
       if (d.port && d.teamsConfigBase64) return true;
     }
     await new Promise(r => setTimeout(r, stepMs));
@@ -232,6 +244,8 @@ async function rconSend(host, port, pass, cmd, timeoutMs=8000) {
         }
       };
       sock.on("data", onData);
+      // Reduziert read timeout, um schneller auf Fehler zu reagieren, aber gibt
+      // dem globalen timer (timeoutMs) genug Spielraum.
       setTimeout(()=>{ sock.off("data", onData); rej(new Error("rcon read timeout")); }, 3000);
     });
     const end = (err, data) => { try{ sock.destroy(); }catch{}; err ? reject(err) : resolve(data); };
@@ -245,6 +259,9 @@ async function rconSend(host, port, pass, cmd, timeoutMs=8000) {
         sock.write(pack(2,2,cmd));
         sock.write(pack(3,2,"")); // terminator
         const resp = await readPacket();
+        // Optionale zweite Antwort lesen (Final RCON Fix)
+        try { await readPacket(); } catch (e) { /* ignore read timeout on optional packet */ }
+
         clearTimeout(timer);
         return end(null, resp.subarray(12, resp.length-2).toString("utf8"));
       } catch (e) { clearTimeout(timer); return end(e); }
@@ -306,7 +323,7 @@ function startMatchCold({ mapId, teamsConfigBase64 }){
     child.on("close", async (code)=>{
       clearTimeout(t);
       if (timed || code!==0) return reject(new Error("docker run (match) failed"));
-      const id=(out.trim().split("\n").pop()||"").trim(); if (!id) return reject(new Error("no container id"));
+      const id = (out.trim().split("\n").pop()||"").trim(); if (!id) return reject(new Error("no container id"));
       const ready = await waitPort(GAME_PING_HOST, hostGamePort, READY_TIMEOUT_MS);
       if (!ready){ rmContainer(id); return reject(new Error("match not ready")); }
       resolve({ matchId, name, gamePort: hostGamePort, containerId: id });
@@ -329,8 +346,9 @@ async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
     `assignmatch ${matchId} ${mapId} ${teamsConfigBase64}`, 6000
   );
 
+  // Mehrere Versuche mit kleinen Verzögerungen, um RCON-Initialisierung abzufangen
   let ok=false, lastErr=null;
-  for (const delay of [0, 200, 400, 800]) {
+  for (const delay of [0, 500, 1000, 2000]) {
     if (delay) await new Promise(r=>setTimeout(r, delay));
     try { await trySend(); ok=true; break; } catch(e){ lastErr=e; }
   }
@@ -368,27 +386,58 @@ async function ensureWarmPool(){
 /* Cleanup:
    - Entfernt alle managed Container, deren Status NICHT mit "Up " beginnt.
    - Optional: entfernt "Up" Matches ohne Ports (stale).
+   - KRITISCH: Entfernt Player Locks, wenn der Container nicht mehr existiert.
 */
 function cleanup({ checkStale=true } = {}) {
-  const all = psManaged(true);
+  const allRunningIds = new Set(psManaged(false).map(c => c.id));
   let removed = 0;
+  let locksRemoved = 0;
 
-  for (const c of all) {
+  // 1. Entfernt Player Locks, deren Container nicht mehr laufen
+  for (const [pid, status] of playerLocks.entries()) {
+      if (typeof status === 'string' && status.startsWith(MATCH_LOCK_PREFIX)) {
+          const containerId = status.substring(MATCH_LOCK_PREFIX.length);
+          // Wenn der Container nicht in der Liste der aktuell laufenden IDs ist
+          if (!allRunningIds.has(containerId)) {
+              playerLocks.delete(pid);
+              locksRemoved++;
+          }
+      }
+  }
+
+  // 2. Entfernt Container basierend auf Zustand (ursprüngliche Logik)
+  const allContainers = psManaged(true);
+
+  for (const c of allContainers) {
     const isUp = /^Up\s/.test(c.status||"");
-    if (!isUp) { if (rmContainer(c.id)) removed++; continue; }
+    // Entfernt beendete oder fehlgeschlagene Container
+    if (!isUp) {
+        if (rmContainer(c.id)) removed++;
+        continue;
+    }
 
+    // Entfernt laufende Matches ohne Ports (Stale)
     if (checkStale && c.name?.startsWith("match-")) {
       const det = fetchMatchDetails(c.id, c);
       const bothClosed = (!det.port || !det.rconPort);
-      if (bothClosed) { if (rmContainer(c.id)) removed++; continue; }
+      if (bothClosed) {
+          if (rmContainer(c.id)) removed++;
+          continue;
+      }
     }
   }
+
+  if (removed > 0 || locksRemoved > 0) {
+      console.log(`[CLEANUP] Removed ${removed} containers and cleaned up ${locksRemoved} expired player locks.`);
+  }
+
   return removed;
 }
 
 /* Periodic maintenance */
 setInterval(ensureWarmPool, 3000);
-setInterval(()=>cleanup({checkStale:false}), 15_000); // schnelle Entsorgung beendeter Container
+// Führt Cleanup für Locks häufiger aus, da sie kritisch sind
+setInterval(()=>cleanup({checkStale:false}), 10_000);
 setInterval(()=>gcExpiredLocks(), 5_000);             // TTL-GC für Player-Locks
 setInterval(()=>gcIdempotency(), 5_000);              // GC Idempotency
 ensureWarmPool();
@@ -419,14 +468,14 @@ const server = http.createServer((req,res)=>{
     gcExpiredLocks();
     const matches = listMatches(false).map(m => fetchMatchDetails(m.id, m))
       .filter(d => d.port && d.name && d.teamsConfigBase64);
-    const pendingPlayers = Array.from(playerLocks.keys());
+    const pendingPlayers = Array.from(playerLocks.keys()).filter(pid => typeof playerLocks.get(pid) === 'number');
     return send(200, { ok:true, matches, pendingPlayers });
   }
 
   if (req.method==="GET" && req.url==="/in-use"){
     gcExpiredLocks();
     const active = Array.from(playersInActiveMatches());
-    const pending = Array.from(playerLocks.keys());
+    const pending = Array.from(playerLocks.keys()).filter(pid => typeof playerLocks.get(pid) === 'number');
     const inUse = Array.from(new Set([...pending, ...active]));
     return send(200, { ok:true, inUse, pending, active });
   }
@@ -442,7 +491,7 @@ const server = http.createServer((req,res)=>{
 
         // 🧾 Idempotency-Key (Header bevorzugt, sonst Body)
         const idempKey = (req.headers["x-idempotency-key"] ? String(req.headers["x-idempotency-key"]) :
-                          (typeof parsed.idempotencyKey === "string" ? parsed.idempotencyKey : null));
+                           (typeof parsed.idempotencyKey === "string" ? parsed.idempotencyKey : null));
         if (idempKey && idempCache.has(idempKey)) {
           const cached = idempCache.get(idempKey);
           return send(200, cached.responseJson);
@@ -455,20 +504,30 @@ const server = http.createServer((req,res)=>{
         if (candidateIds.length === 0) {
           return send(409, { ok:false, error:"no players to lock (provide 'players' or teamsConfig with player IDs)" });
         }
+
+        // KRITISCHE PRÜFUNG: Konflikt mit aktiven Matches (permanente Locks) ODER Locks in Queue (temporäre Locks)
         const active = playersInActiveMatches();
-        const conflicts = candidateIds.filter(pid => playerLocks.has(pid) || active.has(pid));
+        const conflicts = candidateIds.filter(pid => {
+            const currentLock = playerLocks.get(pid);
+            const isTempLocked = typeof currentLock === 'number';
+            const isPermLocked = active.has(pid);
+            return isTempLocked || isPermLocked;
+        });
+
         if (conflicts.length) return send(409, { ok:false, error:"players already in queue/match", conflicts });
 
         const now = Date.now();
+        // Setze TEMPORÄRE Locks (ExpiresAt)
         for (const pid of candidateIds) playerLocks.set(pid, now + PLAYER_LOCK_TTL_MS);
 
         // Match bauen + Sichtbarkeit abwarten
-        let resp = null, success = false, matchName = null;
+        let resp = null, success = false, matchName = null, containerId = null;
         try {
           resp = await assignWarmToMatch({ mapId, teamsConfigBase64 });
           if (!resp) resp = await startMatchCold({ mapId, teamsConfigBase64 });
           success = !!resp;
           matchName = resp?.name || null;
+          containerId = resp?.containerId || null;
 
           if (success && matchName) {
             await waitMatchVisibleByName(matchName, 5000, 150); // schließt Restfenster
@@ -477,10 +536,17 @@ const server = http.createServer((req,res)=>{
           // fall-through to finally
         } finally {
           if (!success) {
+            // Match fehlgeschlagen: Alle TEMPORÄREN Locks entfernen
             for (const pid of candidateIds) playerLocks.delete(pid);
           } else {
-            const exp = Date.now() + SUCCESS_LOCK_TTL_MS;
-            for (const pid of candidateIds) playerLocks.set(pid, exp);
+            // Match erfolgreich: TEMPORÄRE Locks in PERMANENTE Locks umwandeln (Match-ID als Status)
+            if (containerId) {
+                const lockValue = `${MATCH_LOCK_PREFIX}${containerId}`;
+                for (const pid of candidateIds) playerLocks.set(pid, lockValue);
+            } else {
+                // Fallback: Wenn Container ID fehlt, Lock löschen (sollte nicht passieren)
+                for (const pid of candidateIds) playerLocks.delete(pid);
+            }
           }
         }
 
@@ -501,10 +567,32 @@ const server = http.createServer((req,res)=>{
     req.on("end", ()=>{
       try{
         const { name, port } = JSON.parse(body||"{}");
-        const ok = name ? rmContainer(name) :
-          (port ? (rmContainer((psManaged(true).find(c=>(c.ports||"").includes(`:${Number(port)}->25565`))||{}).id||"")) : false);
+
+        // 1. Container ID finden
+        const foundContainer = psManaged(true).find(c => c.name === name || (c.ports||"").includes(`:${Number(port)}->25565`));
+        if (!foundContainer) return send(404, { ok:false, error: "Match not found" });
+
+        const containerId = foundContainer.id;
+
+        // 2. Spieler freigeben (aus Cache/Match-ID Lock)
+        // Finden Sie alle Spieler, die mit dieser Container-ID gelockt sind.
+        const lockValue = `${MATCH_LOCK_PREFIX}${containerId}`;
+        const playersToUnlock = [];
+        for (const [pid, status] of playerLocks.entries()) {
+            if (status === lockValue) {
+                playersToUnlock.push(pid);
+            }
+        }
+
+        for (const pid of playersToUnlock) {
+            playerLocks.delete(pid);
+        }
+
+        // 3. Container entfernen
+        const ok = rmContainer(containerId);
+
         ensureWarmPool();
-        return send(ok?200:404,{ ok });
+        return send(ok?200:500,{ ok: ok, unlockedPlayers: playersToUnlock.length });
       } catch(e){ return send(400,{ ok:false, error:e.message }); }
     });
     return;

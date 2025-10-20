@@ -17,6 +17,7 @@ public class MatchLookupService {
     private final Gson gson = new Gson();
 
     public MatchLookupService() {
+        // konservative Timeouts, damit der Command snappy bleibt
         this.http = new OkHttpClient.Builder()
                 .connectTimeout(1500, TimeUnit.MILLISECONDS)
                 .readTimeout(2000, TimeUnit.MILLISECONDS)
@@ -26,14 +27,17 @@ public class MatchLookupService {
 
     /** Schnellcheck: ist der Spieler pending (Lock) ODER bereits in einem aktiven Match? */
     public boolean isPlayerInAnyMatch(UUID playerId) {
-        final String needle = playerId.toString();
+        // Spieler-UUID im korrekten (unformatierten) Format für den Vergleich im Orchestrator
+        final String needle = normalizeUuid(playerId.toString());
 
         // 1) Schnell: /in-use (pending + active, aus Orchestrator-Locks)
         try {
             InUseResponse iu = fetchInUse();
             if (iu != null && iu.ok) {
+                // Der 'inUse' Array enthält die vereinigt (pending + active) Spieler-IDs
                 if (iu.inUse != null && iu.inUse.contains(needle)) return true;
-                // Falls "inUse" fehlt (sollte nicht), checke pending/active einzeln:
+
+                // Redundanter Check, falls 'inUse' leer/null ist, aber pending/active nicht (sollte nicht passieren)
                 if ((iu.pending != null && iu.pending.contains(needle)) ||
                         (iu.active  != null && iu.active.contains(needle))) return true;
             }
@@ -54,6 +58,7 @@ public class MatchLookupService {
 
             for (MatchInfo m : matches) {
                 if (m.port <= 0) continue;
+                // Verwendet die interne Cache-Logik des MatchInfo-Objekts
                 if (m.containsPlayer(playerId)) return Optional.of(m);
             }
             return Optional.empty();
@@ -90,6 +95,10 @@ public class MatchLookupService {
             String body = resp.body() != null ? resp.body().string() : "{}";
             return gson.fromJson(body, InUseResponse.class);
         }
+    }
+
+    private static String normalizeUuid(String s) {
+        return s == null ? "" : s.replace("-", "").toLowerCase(Locale.ROOT);
     }
 
     /* ------------- DTOs ------------- */
@@ -140,6 +149,7 @@ public class MatchLookupService {
             try {
                 byte[] raw = Base64.getDecoder().decode(teamsConfigBase64);
                 String json = new String(raw, StandardCharsets.UTF_8);
+                // Wichtig: Verwende den neuen JsonParser
                 JsonElement root = JsonParser.parseString(json);
                 collectUuidsDeep(root, cachedPlayerIdsNorm);
             } catch (Exception ignored) {
