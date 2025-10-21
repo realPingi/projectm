@@ -73,4 +73,9 @@ public class PlayerListener implements Listener {
     public void onInteract(PlayerInteractEvent event) {
         event.setCancelled(true);
     }
+
+    @EventHandler
+    public void onChat(AsyncPlayerChatEvent event) {
+        event.setFormat("%s" + ChatColor.GOLD + " >> " + ChatColor.GRAY + "%s");
+    }
 }

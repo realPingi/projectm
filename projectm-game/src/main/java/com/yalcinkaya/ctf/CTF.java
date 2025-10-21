@@ -68,20 +68,6 @@ public class CTF extends JavaPlugin {
         this.getCommand("setflag").setExecutor(new SetFlagCommand());
         this.getCommand("forcewin").setExecutor(new ForceWinCommand());
         this.getCommand("assignmatch").setExecutor(new AssignMatchCommand());
-
-        String MATCH_ID = System.getenv("MATCH_ID");
-        String MAP_ID = System.getenv("MAP_ID");
-        String TEAM_JSON = System.getenv("TEAMS_CONFIG_B64");
-
-        String POOL_MODE = System.getenv("POOL_MODE");
-
-        // Cold Start Bedingung: MATCH_ID ist gesetzt UND es ist KEIN Pool-Modus
-        if (MATCH_ID != null && MAP_ID != null && TEAM_JSON != null && !"true".equalsIgnoreCase(POOL_MODE)) {
-            setMatchId(MATCH_ID);
-            setMapId(MAP_ID);
-            setTeamJson(TEAM_JSON);
-            start();
-        }
     }
 
     public void start() {

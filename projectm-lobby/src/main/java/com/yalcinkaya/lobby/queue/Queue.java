@@ -106,7 +106,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param matches The {@link Queueable}s that were previously matched.
      */
     public void onMatchFound(Set<T> matches) {
-        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Match found: ", getName()))));
+        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Match found for ", getName(), ChatColor.GRAY + "! Starting game server..."))));
     }
 
     /**
@@ -169,7 +169,11 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                     return;
                 }
                 MatchLookupService lookup = new MatchLookupService();
-                if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInAnyMatch)) {
+                if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerWaitingForMatch)) {
+                    sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You have already been matched. Waiting for game server..."));
+                    return;
+                }
+                if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInActiveMatch)) {
                     sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
                     return;
                 }

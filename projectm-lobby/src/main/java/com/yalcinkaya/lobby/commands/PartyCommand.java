@@ -135,7 +135,7 @@ public class PartyCommand implements CommandExecutor {
         // Einladung speichern und Timeout starten
         partyManager.sendInvite(user, targetUser);
 
-        String inviteMessage = "Info >> " + inviterName + "<gray> has invited you to join their party. ";
+        String inviteMessage = "<light_purple><bold>Info >></bold> " + inviterName + "<gray> has invited you to join their party. ";
         String clickablePart = "<click:run_command:/party join " + inviterName + "><green>(accept)</click>";
 
         LobbyUtil.getPlayer(targetUser).sendMessage(MiniMessage.miniMessage().deserialize(inviteMessage + clickablePart));

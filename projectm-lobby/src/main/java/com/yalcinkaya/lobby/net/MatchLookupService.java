@@ -25,28 +25,46 @@ public class MatchLookupService {
                 .build();
     }
 
-    /** Schnellcheck: ist der Spieler pending (Lock) ODER bereits in einem aktiven Match? */
-    public boolean isPlayerInAnyMatch(UUID playerId) {
-        // Spieler-UUID im korrekten (unformatierten) Format für den Vergleich im Orchestrator
-        final String needle = normalizeUuid(playerId.toString());
+    public boolean isPlayerWaitingForMatch(UUID playerId) {
+        final String needle = playerId.toString().replace("-", "").toLowerCase(Locale.ROOT);
 
-        // 1) Schnell: /in-use (pending + active, aus Orchestrator-Locks)
+        try {
+            // Angenommen, fetchInUse() liefert die InUseResponse (enthält pending und active Listen)
+            InUseResponse iu = fetchInUse();
+
+            if (iu != null && iu.ok) {
+                // Spieler ist 'pending', wenn er in der PENDING-Liste ist
+                if (iu.pending != null && iu.pending.contains(needle)) {
+
+                    // Wir müssen auch prüfen, ob er NICHT GLEICHZEITIG active ist.
+                    // Im Normalfall sollte PENDING nur Locks enthalten, die noch nicht in ACTIVE
+                    // überführt wurden.
+                    boolean isActive = iu.active != null && iu.active.contains(needle);
+
+                    // Spieler wartet, wenn er pending ist, aber noch nicht als active geführt wird.
+                    return !isActive;
+                }
+            }
+        } catch (Exception e) {
+            Bukkit.getLogger().warning("[MatchLookupService] Pending check failed: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean isPlayerInActiveMatch(UUID playerId) {
+        final String needle = playerId.toString().replace("-", "").toLowerCase(Locale.ROOT);
+
         try {
             InUseResponse iu = fetchInUse();
             if (iu != null && iu.ok) {
-                // Der 'inUse' Array enthält die vereinigt (pending + active) Spieler-IDs
-                if (iu.inUse != null && iu.inUse.contains(needle)) return true;
-
-                // Redundanter Check, falls 'inUse' leer/null ist, aber pending/active nicht (sollte nicht passieren)
-                if ((iu.pending != null && iu.pending.contains(needle)) ||
-                        (iu.active  != null && iu.active.contains(needle))) return true;
+                // Spieler ist 'active', wenn er in der ACTIVE-Liste ist
+                return iu.active != null && iu.active.contains(needle);
             }
         } catch (Exception e) {
-            Bukkit.getLogger().warning("[MatchLookupService] /in-use check failed: " + e.getMessage());
-            // Kein Hard-Fail – wir fallen auf die Match-Liste zurück.
+            Bukkit.getLogger().warning("[MatchLookupService] Active check failed: " + e.getMessage());
         }
 
-        // 2) Fallback: aktive Matches abfragen und Players aus TEAMS_CONFIG_B64 decodieren
+        // Fallback: Manuelle Prüfung der Match-Liste (wie in findMatchFor)
         return findMatchFor(playerId).isPresent();
     }
 

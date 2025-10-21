@@ -4,10 +4,10 @@ import org.bukkit.ChatColor;
 
 public enum MessageType {
 
-    WARNING(ChatColor.RED + "" + ChatColor.BOLD + "Warning >> ", ChatColor.RED + ""),
-    SUCCESS(ChatColor.GREEN + "" + ChatColor.BOLD + "Success >> ", ChatColor.GREEN + ""),
-    INFO(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + "Info >> ", ChatColor.LIGHT_PURPLE + ""),
-    BROADCAST(ChatColor.GOLD + "" + ChatColor.BOLD + "ProjectM >> ", ChatColor.GRAY + "");
+    WARNING(ChatColor.RED + "Warning >> ", ChatColor.RED + ""),
+    SUCCESS(ChatColor.GREEN + "Success >> ", ChatColor.GREEN + ""),
+    INFO(ChatColor.LIGHT_PURPLE + "Info >> ", ChatColor.LIGHT_PURPLE + ""),
+    BROADCAST(ChatColor.GOLD + "ProjectM >> ", ChatColor.GRAY + "");
 
     private String prefix;
     private String format;
