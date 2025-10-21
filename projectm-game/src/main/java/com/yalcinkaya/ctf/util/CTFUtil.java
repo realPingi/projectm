@@ -256,7 +256,7 @@ public class CTFUtil {
     }
 
     public static boolean isInSpawn(CTFUser user) {
-        String mapId = System.getenv("MAP_ID");
+        String mapId = CTF.getInstance().getMapId();
         Player player = getPlayer(user);
         Location location = player.getLocation();
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
@@ -352,7 +352,7 @@ public class CTFUtil {
     }
 
     public static boolean isInFlagRegion(String team, Location location) {
-        String mapId = System.getenv("MAP_ID");
+        String mapId = CTF.getInstance().getMapId();
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
         RegionManager regions = container.get(BukkitAdapter.adapt(location.getWorld()));
         List<ProtectedRegion> flagRegions = new ArrayList<>();
@@ -369,7 +369,7 @@ public class CTFUtil {
     }
 
     public static boolean isInSpawnRegion(Location location) {
-        String mapId = System.getenv("MAP_ID");
+        String mapId = CTF.getInstance().getMapId();
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
         RegionManager regions = container.get(BukkitAdapter.adapt(location.getWorld()));
         List<ProtectedRegion> spawnRegions = new ArrayList<>();

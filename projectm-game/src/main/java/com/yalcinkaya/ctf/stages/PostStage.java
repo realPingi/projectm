@@ -34,7 +34,10 @@ public class PostStage extends CTFStage<PostStageListener> {
                 BungeeUtil.sendPlayerToLobby(CTF.getInstance(), player);
             }
 
-            new MatchEndNotifier().closeMatch(CTF.getInstance().getMatchId());
+            Bukkit.getScheduler().runTaskAsynchronously(CTF.getInstance(), () -> {
+                new MatchEndNotifier().closeMatch(CTF.getInstance().getMatchId());
+                Bukkit.getScheduler().runTaskLater(CTF.getInstance(), Bukkit::shutdown, 20);
+            });
 
         }, 20 * shutdown);
     }

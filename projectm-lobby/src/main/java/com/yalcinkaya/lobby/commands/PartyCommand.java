@@ -53,10 +53,9 @@ public class PartyCommand implements CommandExecutor {
     }
 
     private void sendHelp(LobbyUser user) {
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GOLD + "Party Commands:"));
         user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party create " + ChatColor.GRAY + "- Creates a new party."));
         user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party invite <player> " + ChatColor.GRAY + "- Invites a player."));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party join <player> " + ChatColor.GRAY + "- Joins a party (if invited, or if leader is specified)."));
+        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party join <player> " + ChatColor.GRAY + "- Joins a party."));
         user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party leave " + ChatColor.GRAY + "- Leaves your current party."));
         user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party list " + ChatColor.GRAY + "- Lists all party members."));
     }
@@ -72,7 +71,7 @@ public class PartyCommand implements CommandExecutor {
             return;
         }
 
-        party.getMembers().forEach(uuid -> user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + LobbyUtil.getPlayer(user).getName())));
+        party.getMembers().forEach(uuid -> user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + LobbyUtil.getPlayer(uuid).getName())));
     }
 
     private void handleCreate(LobbyUser user) {
@@ -102,7 +101,7 @@ public class PartyCommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party invite <playername>"));
+            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party invite <playerName>"));
             return;
         }
 
@@ -136,11 +135,10 @@ public class PartyCommand implements CommandExecutor {
         // Einladung speichern und Timeout starten
         partyManager.sendInvite(user, targetUser);
 
-        String inviteMessage = LobbyUtil.getLobbyMessage(MessageType.INFO, inviterName, ChatColor.GRAY + " has invited you to join their party. ");
-        String clickablePart = "<click:run_command:/party join " + inviterName + "><green>[<bold>ACCEPT</bold>]</click> " + ChatColor.GRAY + "(60s)";
+        String inviteMessage = "Info >> " + inviterName + "<gray> has invited you to join their party. ";
+        String clickablePart = "<click:run_command:/party join " + inviterName + "><green>(accept)</click>";
 
-        targetUser.sendMessage(inviteMessage);
-        LobbyUtil.getPlayer(targetUser).sendMessage(MiniMessage.miniMessage().deserialize(clickablePart));
+        LobbyUtil.getPlayer(targetUser).sendMessage(MiniMessage.miniMessage().deserialize(inviteMessage + clickablePart));
         user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You have invited ", targetName, ChatColor.GRAY + " to your party."));
 
         // Benachrichtige Party-Mitglieder über die Einladung
@@ -161,7 +159,7 @@ public class PartyCommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party join <invitername>"));
+            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party join <inviterName>"));
             return;
         }
 

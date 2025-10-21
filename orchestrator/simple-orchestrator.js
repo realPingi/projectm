@@ -1,4 +1,4 @@
-// warm-pool-orchestrator.js — Final Fix (Working Locks)
+// warm-pool-orchestrator.js — Final Fix (Aggressiveres Aufräumen)
 "use strict";
 
 const http = require("http");
@@ -362,6 +362,52 @@ async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
   return { matchId, name:`match-${matchId}`, gamePort: details.port, containerId:first.id, teamsConfigBase64 };
 }
 
+/** ─── Fix: Allgemeine Aufräumlogik, die sofort ausgeführt werden muss ─── */
+function runImmediateCleanup() {
+  const allContainers = psManaged(true);
+  const allRunningIds = new Set(allContainers.filter(c => /^Up\s/.test(c.status||"")).map(c => c.id));
+  let locksRemoved = 0;
+  let containersRemoved = 0;
+
+  // 1. Locks aufräumen (entfernt Locks von abgestürzten Containern)
+  for (const [pid, status] of playerLocks.entries()) {
+      if (typeof status === 'string' && status.startsWith(MATCH_LOCK_PREFIX)) {
+          const containerId = status.substring(MATCH_LOCK_PREFIX.length);
+          // Wenn der Container NICHT in der Liste der aktuell laufenden IDs ist, war er abgestürzt/beendet.
+          if (!allRunningIds.has(containerId)) {
+              playerLocks.delete(pid);
+              locksRemoved++;
+          }
+      }
+  }
+
+  // 2. Container aufräumen (entfernt BEENDETE Container und Stale Matches)
+  for (const c of allContainers) {
+    const isUp = allRunningIds.has(c.id);
+
+    // a) Entfernt BEENDETE Container (Status != "Up ")
+    if (!isUp) {
+        if (rmContainer(c.id)) containersRemoved++;
+        continue;
+    }
+
+    // b) Entfernt laufende Matches ohne Ports (Stale Check - aggressiv)
+    // Wenn das Match noch "Up" ist, aber die Ports nicht mehr funktionieren, muss es weg.
+    if (c.name?.startsWith("match-")) {
+      const det = fetchMatchDetails(c.id, c);
+      const bothClosed = (!det.port || !det.rconPort);
+      if (bothClosed) {
+          if (rmContainer(c.id)) containersRemoved++;
+          continue;
+      }
+    }
+  }
+
+  if (containersRemoved > 0 || locksRemoved > 0) {
+      console.log(`[CLEANUP] Removed ${containersRemoved} exited/stale containers and cleaned up ${locksRemoved} expired player locks.`);
+  }
+}
+
 /* ─── Pool + Cleanup ─── */
 let poolTickRunning = false;
 async function ensureWarmPool(){
@@ -384,65 +430,13 @@ async function ensureWarmPool(){
   } finally { poolTickRunning = false; }
 }
 
-/* Cleanup:
-   - Entfernt alle managed Container, deren Status NICHT mit "Up " beginnt.
-   - Optional: entfernt "Up" Matches ohne Ports (stale).
-   - KRITISCH: Entfernt Player Locks, wenn der Container nicht mehr existiert.
-*/
-function cleanup({ checkStale=true } = {}) {
-  // FIX: Muss alle Container (Up/Exited) holen, um Exited zu entfernen und Up zu prüfen
-  const allContainers = psManaged(true);
-  const allRunningIds = new Set(allContainers.filter(c => /^Up\s/.test(c.status||"")).map(c => c.id));
-  let removed = 0;
-  let locksRemoved = 0;
-
-  // 1. Locks aufräumen
-  for (const [pid, status] of playerLocks.entries()) {
-      if (typeof status === 'string' && status.startsWith(MATCH_LOCK_PREFIX)) {
-          const containerId = status.substring(MATCH_LOCK_PREFIX.length);
-          // Entferne den Lock, wenn der Container nicht mehr läuft
-          if (!allRunningIds.has(containerId)) {
-              playerLocks.delete(pid);
-              locksRemoved++;
-          }
-      }
-  }
-
-  // 2. Container aufräumen
-  for (const c of allContainers) {
-    const isUp = allRunningIds.has(c.id);
-
-    // a) Entfernt BEENDETE Container (Status != "Up ")
-    if (!isUp) {
-        if (rmContainer(c.id)) removed++;
-        continue;
-    }
-
-    // b) Entfernt laufende Matches ohne Ports (Stale Check)
-    if (checkStale && c.name?.startsWith("match-")) {
-      const det = fetchMatchDetails(c.id, c);
-      const bothClosed = (!det.port || !det.rconPort);
-      if (bothClosed) {
-          if (rmContainer(c.id)) removed++;
-          continue;
-      }
-    }
-  }
-
-  if (removed > 0 || locksRemoved > 0) {
-      console.log(`[CLEANUP] Removed ${removed} containers and cleaned up ${locksRemoved} expired player locks.`);
-  }
-
-  return removed;
-}
-
 /* Periodic maintenance */
+// Führt den sofortigen Cleanup nun alle 2s aus (sehr schnell)
+setInterval(runImmediateCleanup, 2000);
 setInterval(ensureWarmPool, 3000);
-// Führt Cleanup für Locks und beendete Container häufiger aus
-setInterval(()=>cleanup({checkStale:false}), 10_000);
-setInterval(()=>gcExpiredLocks(), 5_000);             // TTL-GC für Player-Locks
-setInterval(()=>gcIdempotency(), 5_000);              // GC Idempotency
-ensureWarmPool();
+setInterval(gcExpiredLocks, 5_000);      // TTL-GC für temporäre Locks
+setInterval(gcIdempotency, 5_000);       // GC Idempotency
+ensureWarmPool(); // Initialer Pool-Aufbau
 
 /* ─── HTTP ─── */
 const server = http.createServer((req,res)=>{
@@ -593,6 +587,9 @@ const server = http.createServer((req,res)=>{
         // 3. Container entfernen
         const ok = rmContainer(containerId);
 
+        // KRITISCHER FIX: Sofortiges Aufräumen von Exited-Containern und Locks
+        runImmediateCleanup();
+
         ensureWarmPool();
         return send(ok?200:500,{ ok: ok, unlockedPlayers: playersToUnlock.length });
       } catch(e){ return send(400,{ ok:false, error:e.message }); }
@@ -601,9 +598,10 @@ const server = http.createServer((req,res)=>{
   }
 
   if (req.method==="POST" && req.url==="/gc"){
-    const removed = cleanup({checkStale:true});
+    // Dieser Endpunkt verwendet jetzt den aggressiven Cleanup
+    runImmediateCleanup();
     ensureWarmPool();
-    return send(200, { ok:true, removed });
+    return send(200, { ok:true });
   }
 
   return send(404,{ ok:false, error:"Not Found" });
