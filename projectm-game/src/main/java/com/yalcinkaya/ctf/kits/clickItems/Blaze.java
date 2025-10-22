@@ -4,15 +4,16 @@ import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.PotentialObject;
-import com.yalcinkaya.ctf.util.parametrization.VectorUtil;
-import com.yalcinkaya.ctf.util.parametrization.builder.Illustrations;
-import com.yalcinkaya.ctf.util.parametrization.builder.MultiColorParticle;
-import com.yalcinkaya.ctf.util.parametrization.builder.SurfaceBuilder;
-import com.yalcinkaya.ctf.util.parametrization.domains.Area;
-import com.yalcinkaya.ctf.util.parametrization.domains.Interval;
-import com.yalcinkaya.ctf.util.parametrization.functions.Surface;
-import com.yalcinkaya.ctf.util.parametrization.types.SurfaceTypes;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.PotentialObject;
+import com.yalcinkaya.util.parametrization.VectorUtil;
+import com.yalcinkaya.util.parametrization.builder.Illustrations;
+import com.yalcinkaya.util.parametrization.builder.MultiColorParticle;
+import com.yalcinkaya.util.parametrization.builder.SurfaceBuilder;
+import com.yalcinkaya.util.parametrization.domains.Area;
+import com.yalcinkaya.util.parametrization.domains.Interval;
+import com.yalcinkaya.util.parametrization.functions.Surface;
+import com.yalcinkaya.util.parametrization.types.SurfaceTypes;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -24,7 +25,7 @@ import java.util.Set;
 
 public class Blaze extends ClickItem implements EnergyConsumer {
 
-    private static final Set<PotentialObject<Color>> colors = CTFUtil.mixColors(Color.fromRGB(255, 189, 66), Color.fromRGB(186, 122, 2), Color.fromRGB(242, 203, 131), 70, 50, 20);
+    private static final Set<PotentialObject<Color>> colors = CoreUtil.mixColors(Color.fromRGB(255, 189, 66), Color.fromRGB(186, 122, 2), Color.fromRGB(242, 203, 131), 70, 50, 20);
     private final ItemStack item = CTFUtil.createIcon("Blaze", Material.CAMPFIRE);
     private final int duration = 12;
     private final int radius = 5;
@@ -41,7 +42,7 @@ public class Blaze extends ClickItem implements EnergyConsumer {
         Illustrations.animateWithTask(sphere, 512, duration * 20, new MultiColorParticle(colors), world, 0.05,
                 vector -> {
                     CTFUtil.getNearbyMates(activator, vector.toLocation(world), radius).stream().map(CTFUtil::getPlayer).forEach(mate -> {
-                        mate.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, effectDuration * 20, 3));
+                        mate.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, effectDuration * 20, 3));
                         mate.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, effectDuration * 20, 0));
                     });
                     return false;

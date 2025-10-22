@@ -7,6 +7,7 @@ import com.yalcinkaya.ctf.kits.Create;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import com.yalcinkaya.ctf.util.TempBlock;
+import com.yalcinkaya.util.CoreUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -42,7 +43,7 @@ public class Tunnel extends ClickItem implements EnergyConsumer {
 
                     @Override
                     public void run() {
-                        new TempBlock(block, CTFUtil.getRandom(Create.materials), true, duration);
+                        new TempBlock(block, CoreUtil.getRandom(Create.materials), true, duration);
                     }
 
                 }.runTaskLater(CTF.getInstance(), d);

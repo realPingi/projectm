@@ -4,7 +4,8 @@ import com.yalcinkaya.ctf.kit.AffectType;
 import com.yalcinkaya.ctf.kit.Beam;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.PotentialObject;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.PotentialObject;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -15,7 +16,7 @@ import java.util.Set;
 
 public class Extract extends Beam {
 
-    private static final Set<PotentialObject<Color>> colors = CTFUtil.mixColors(Color.fromRGB(222, 145, 255), Color.fromRGB(245, 222, 255), Color.fromRGB(63, 0, 74), 50, 50, 20);
+    private static final Set<PotentialObject<Color>> colors = CoreUtil.mixColors(Color.fromRGB(222, 145, 255), Color.fromRGB(245, 222, 255), Color.fromRGB(63, 0, 74), 50, 50, 20);
     private final ItemStack item = CTFUtil.createIcon("Extract", Material.PINK_GLAZED_TERRACOTTA);
 
     @Override

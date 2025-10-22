@@ -3,14 +3,14 @@ package com.yalcinkaya.lobby.commands;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.lobby.util.MessageType;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.MessageType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -31,16 +31,16 @@ public class ReconnectCommand implements CommandExecutor {
         }
         Player p = (Player) sender;
 
-        p.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Looking for running match..."));
+        p.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "Looking for running match..."));
         Bukkit.getScheduler().runTaskAsynchronously(Lobby.getInstance(), () -> {
             Optional<MatchLookupService.MatchInfo> matchOpt = service.findMatchFor(p.getUniqueId());
             if (!matchOpt.isPresent()) {
-                p.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "No running match."));
+                p.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "No running match."));
                 return;
             }
             MatchLookupService.MatchInfo m = matchOpt.get();
             String serverName = m.toVelocityServerName();
-            p.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Reconnecting..."));
+            p.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "Reconnecting..."));
             connectViaProxy(p, serverName);
         });
 
@@ -57,7 +57,7 @@ public class ReconnectCommand implements CommandExecutor {
                 out.writeUTF(serverName);
                 player.sendPluginMessage(Lobby.getInstance(), "BungeeCord", b.toByteArray());
             } catch (IOException e) {
-                player.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Failed reconnecting."));
+                player.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Failed reconnecting."));
             }
         });
     }

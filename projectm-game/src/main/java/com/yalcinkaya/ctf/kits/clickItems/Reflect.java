@@ -5,7 +5,8 @@ import com.yalcinkaya.ctf.kit.Counter;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.MessageType;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.MessageType;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.ChatColor;
@@ -27,7 +28,7 @@ public class Reflect extends ClickItem implements EnergyConsumer {
     public boolean tryClick(CTFUser activator) {
 
         if (rage) {
-            activator.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Your counter is still active."));
+            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Your counter is still active."));
             return false;
         }
 
@@ -38,7 +39,7 @@ public class Reflect extends ClickItem implements EnergyConsumer {
 
         rage = true;
         charges.reset();
-        activator.sendMessage(CTFUtil.getCTFMessage(MessageType.SUCCESS, ChatColor.GRAY + "Your counter is now active."));
+        activator.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, ChatColor.GRAY + "Your counter is now active."));
         return true;
     }
 

@@ -5,7 +5,8 @@ import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.party.PartyManager;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.lobby.util.MessageType;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.MessageType;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -29,7 +30,7 @@ public class PartyCommand implements CommandExecutor {
 
         LobbyUser user = LobbyUtil.getUser(player);
         if (user == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Error loading your user profile."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Error loading your user profile."));
             return true;
         }
 
@@ -53,11 +54,11 @@ public class PartyCommand implements CommandExecutor {
     }
 
     private void sendHelp(LobbyUser user) {
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party create " + ChatColor.GRAY + "- Creates a new party."));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party invite <player> " + ChatColor.GRAY + "- Invites a player."));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party join <player> " + ChatColor.GRAY + "- Joins a party."));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party leave " + ChatColor.GRAY + "- Leaves your current party."));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.YELLOW + "/party list " + ChatColor.GRAY + "- Lists all party members."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.YELLOW + "/party create " + ChatColor.GRAY + "- Creates a new party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.YELLOW + "/party invite <player> " + ChatColor.GRAY + "- Invites a player."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.YELLOW + "/party join <player> " + ChatColor.GRAY + "- Joins a party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.YELLOW + "/party leave " + ChatColor.GRAY + "- Leaves your current party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.YELLOW + "/party list " + ChatColor.GRAY + "- Lists all party members."));
     }
 
     // --- Sub-Befehle ---
@@ -67,22 +68,22 @@ public class PartyCommand implements CommandExecutor {
         Party party = partyManager.getParty(user);
 
         if (party == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not in a party."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are not in a party."));
             return;
         }
 
-        party.getMembers().forEach(uuid -> user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + LobbyUtil.getPlayer(uuid).getName())));
+        party.getMembers().forEach(uuid -> user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + LobbyUtil.getPlayer(uuid).getName())));
     }
 
     private void handleCreate(LobbyUser user) {
         PartyManager partyManager = Lobby.getInstance().getPartyManager();
         if (partyManager.hasParty(user)) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are already in a party."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are already in a party."));
             return;
         }
 
         partyManager.createParty(user);
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You have created a new party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You have created a new party."));
     }
 
     private void handleInvite(LobbyUser user, String[] args) {
@@ -90,18 +91,18 @@ public class PartyCommand implements CommandExecutor {
         String inviterName = LobbyUtil.getPlayer(user).getName();
 
         if (!partyManager.hasParty(user)) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You must create a party first (/party create)."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You must create a party first (/party create)."));
             return;
         }
 
         Party party = partyManager.getParty(user);
         if (party.size() >= 5) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "The party is full."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "The party is full."));
             return;
         }
 
         if (args.length < 2) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party invite <playerName>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party invite <playerName>"));
             return;
         }
 
@@ -109,25 +110,25 @@ public class PartyCommand implements CommandExecutor {
         Player targetPlayer = Bukkit.getPlayerExact(targetName);
 
         if (targetPlayer == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Player ", targetName, ChatColor.GRAY + " is not online."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Player ", targetName, ChatColor.GRAY + " is not online."));
             return;
         }
 
         LobbyUser targetUser = LobbyUtil.getUser(targetPlayer);
 
         if (partyManager.hasParty(targetUser)) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "This player is already in a party."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This player is already in a party."));
             return;
         }
 
         if (user.getUuid().equals(targetUser.getUuid())) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You cannot invite yourself."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You cannot invite yourself."));
             return;
         }
 
         // Benachrichtigung bei bereits bestehender Einladung (optional, aber nützlich)
         if (partyManager.getInviteParty(targetUser.getUuid()) != null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "This player already has a pending party invite."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This player already has a pending party invite."));
             // Du kannst hier returnen oder einfach eine neue Einladung senden
         }
 
@@ -139,10 +140,10 @@ public class PartyCommand implements CommandExecutor {
         String clickablePart = "<click:run_command:/party join " + inviterName + "><green>(accept)</click>";
 
         LobbyUtil.getPlayer(targetUser).sendMessage(MiniMessage.miniMessage().deserialize(inviteMessage + clickablePart));
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You have invited ", targetName, ChatColor.GRAY + " to your party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You have invited ", targetName, ChatColor.GRAY + " to your party."));
 
         // Benachrichtige Party-Mitglieder über die Einladung
-        String partyNotify = LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You have invited ", targetName, ChatColor.GRAY + " to the party.");
+        String partyNotify = CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You have invited ", targetName, ChatColor.GRAY + " to the party.");
         party.getUUIDs().stream()
                 .filter(uuid -> !uuid.equals(user.getUuid()))
                 .map(LobbyUtil::getUser)
@@ -154,12 +155,12 @@ public class PartyCommand implements CommandExecutor {
     private void handleJoin(LobbyUser user, String[] args) {
         PartyManager partyManager = Lobby.getInstance().getPartyManager();
         if (partyManager.hasParty(user)) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are already in a party."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are already in a party."));
             return;
         }
 
         if (args.length < 2) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party join <inviterName>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Usage: /party join <inviterName>"));
             return;
         }
 
@@ -167,7 +168,7 @@ public class PartyCommand implements CommandExecutor {
         Player inviterPlayer = Bukkit.getPlayerExact(inviterName);
 
         if (inviterPlayer == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "The inviter ", inviterName, ChatColor.GRAY + " is not online."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "The inviter ", inviterName, ChatColor.GRAY + " is not online."));
             return;
         }
 
@@ -177,13 +178,13 @@ public class PartyCommand implements CommandExecutor {
         Party party = partyManager.getInviteParty(user.getUuid());
 
         if (party == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You do not have an open invitation from ", inviterName, ChatColor.GRAY + "."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You do not have an open invitation from ", inviterName, ChatColor.GRAY + "."));
             return;
         }
 
         // Überprüfen, ob die Einladung von der richtigen Person kam
         if (!party.getMembers().contains(inviterUser.getUuid())) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "The invitation from ", inviterName, ChatColor.GRAY + " is no longer valid (the inviter is no longer in the party)."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "The invitation from ", inviterName, ChatColor.GRAY + " is no longer valid (the inviter is no longer in the party)."));
             partyManager.removeInvite(user.getUuid());
             return;
         }
@@ -198,16 +199,16 @@ public class PartyCommand implements CommandExecutor {
         String playerName = LobbyUtil.getPlayer(user).getName();
 
         if (party == null) {
-            user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not in a party."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are not in a party."));
             return;
         }
 
         // Spieler entfernen
         party.removeMember(user);
-        user.sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You have left the party."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You have left the party."));
 
         // Nachricht an verbleibende Mitglieder
-        String leaveMessage = LobbyUtil.getLobbyMessage(MessageType.INFO, playerName, ChatColor.GRAY + " has left the party.");
+        String leaveMessage = CoreUtil.getMessage(MessageType.INFO, playerName, ChatColor.GRAY + " has left the party.");
 
         Set<UUID> remainingMembers = new HashSet<>(party.getUUIDs());
 

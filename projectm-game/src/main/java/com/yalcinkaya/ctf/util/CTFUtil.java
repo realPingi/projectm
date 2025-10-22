@@ -29,35 +29,41 @@ import com.yalcinkaya.ctf.stages.CaptureStage;
 import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
+import com.yalcinkaya.util.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
+
 
 public class CTFUtil {
 
-    public static final Set<Vector> simpleDirections = new HashSet<>(getSimpleDirections());
-    public static final String LINEBREAK = "\n"; // or "\r\n";
+    public static final Set<PotentialObject<Color>> blueColors = CoreUtil.mixColors(Color.fromRGB(0, 81, 255), Color.fromRGB(102, 151, 255), Color.fromRGB(0, 26, 82), 70, 50, 20);
+    public static final Set<PotentialObject<Color>> redColors = CoreUtil.mixColors(Color.fromRGB(247, 87, 95), Color.fromRGB(247, 153, 158), Color.fromRGB(84, 13, 16), 70, 50, 20);
 
-    public static final Set<PotentialObject<Color>> blueColors = CTFUtil.mixColors(Color.fromRGB(0, 81, 255), Color.fromRGB(102, 151, 255), Color.fromRGB(0, 26, 82), 70, 50, 20);
-    public static final Set<PotentialObject<Color>> redColors = CTFUtil.mixColors(Color.fromRGB(247, 87, 95), Color.fromRGB(247, 153, 158), Color.fromRGB(84, 13, 16), 70, 50, 20);
+    public static CTFUser getUser(Player player) {
+        return getUser(player.getUniqueId());
+    }
+
+    public static CTFUser getUser(UUID uuid) {
+        return CTF.getInstance().getPlayerListener().getUserManager().getUser(uuid);
+    }
+
+    public static Player getPlayer(CTFUser user) {
+        return Bukkit.getPlayer(user.getUuid());
+    }
+
+    public static Player getPlayer(UUID uuid) {
+        return Bukkit.getPlayer(uuid);
+    }
 
     public static Set<PotentialObject<Color>> getColorMix(CTFUser user) {
         return user.getTeam().getColor() == TeamColor.BLUE ? blueColors : redColors;
@@ -67,14 +73,14 @@ public class CTFUtil {
         CTFUser user = CTFUtil.getUser(player.getUniqueId());
         Kit kit = user.getKit();
         player.getInventory().clear();
-        player.getInventory().setBoots(new ItemBuilder(Material.IRON_BOOTS).unbreakable().build());
-        player.getInventory().setLeggings(new ItemBuilder(Material.IRON_LEGGINGS).unbreakable().build());
-        player.getInventory().setChestplate(new ItemBuilder(Material.IRON_CHESTPLATE).unbreakable().build());
-        player.getInventory().setHelmet(new ItemBuilder(Material.IRON_HELMET).unbreakable().build());
-        player.getInventory().setItem(0, new ItemBuilder(Material.IRON_SWORD).unbreakable().build());
+        player.getInventory().setBoots(ItemBuilder.of(Material.IRON_BOOTS).unbreakable(true).build());
+        player.getInventory().setLeggings(ItemBuilder.of(Material.IRON_LEGGINGS).unbreakable(true).build());
+        player.getInventory().setChestplate(ItemBuilder.of(Material.IRON_CHESTPLATE).unbreakable(true).build());
+        player.getInventory().setHelmet(ItemBuilder.of(Material.IRON_HELMET).unbreakable(true).build());
+        player.getInventory().setItem(0, ItemBuilder.of(Material.IRON_SWORD).unbreakable(true).build());
         player.getInventory().setItem(1, new ItemStack(Material.GOLDEN_APPLE, 8));
         player.getInventory().setItem(6, new ItemStack(Material.WATER_BUCKET));
-        player.getInventory().setItem(7, new ItemBuilder(Material.IRON_AXE).unbreakable().build());
+        player.getInventory().setItem(7, ItemBuilder.of(Material.IRON_AXE).unbreakable(true).build());
         player.getInventory().setItem(8, new ItemStack(Material.OAK_PLANKS, 64));
         player.getInventory().setItem(17, new ItemStack(Material.OAK_PLANKS, 64));
         player.getInventory().setItem(26, new ItemStack(Material.OAK_PLANKS, 64));
@@ -173,25 +179,13 @@ public class CTFUtil {
         user.setEnergy(modifiedEnergy);
     }
 
-    public static String getCTFMessage(MessageType messageType, String... strings) {
-        return getColoredString(messageType.getPrefix(), messageType.getFormat(), strings);
-    }
-
-    public static String getColoredString(String prefix, String defaultString, String... strings) {
-        String coloredString = prefix + defaultString + "";
-        for (String string : strings) {
-            coloredString += string + defaultString;
-        }
-        return coloredString;
-    }
-
     public static void broadcastMessageForAll(MessageType messageType, String... strings) {
         broadcastMessageForTeam(CTF.getInstance().getBlue(), messageType, strings);
         broadcastMessageForTeam(CTF.getInstance().getRed(), messageType, strings);
     }
 
     public static void broadcastMessageForTeam(Team team, MessageType messageType, String... strings) {
-        team.getMembers().forEach(user -> user.sendMessage(getCTFMessage(messageType, strings)));
+        team.getMembers().forEach(user -> user.sendMessage(CoreUtil.getMessage(messageType, strings)));
     }
 
     public static void playSoundForAll(Sound sound) {
@@ -284,11 +278,7 @@ public class CTFUtil {
     }
 
     public static String printFlagPosition(Flag flag) {
-        return CTFUtil.camelizeString(flag.getLocation().toString());
-    }
-
-    public static String camelizeString(String string) {
-        return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
+        return CoreUtil.camelizeString(flag.getLocation().toString());
     }
 
     public static void displayFlag(CTFUser user) {
@@ -299,20 +289,11 @@ public class CTFUtil {
     }
 
     public static ItemStack createIcon(String name, Material material) {
-        return new ItemBuilder(material).name(MessageType.INFO.getFormat() + name).build();
+        return ItemBuilder.of(material).name(MessageType.INFO.getFormat() + name).build();
     }
 
     public static ItemStack createIcon(String name, Material material, String desc) {
-        return new ItemBuilder(material).name(MessageType.INFO.getFormat() + name).lore(desc, ChatColor.GRAY).build();
-    }
-
-
-    public static Player getPlayer(CTFUser user) {
-        return Bukkit.getPlayer(user.getUuid());
-    }
-
-    public static Player getPlayer(UUID uuid) {
-        return Bukkit.getPlayer(uuid);
+        return ItemBuilder.of(material).name(MessageType.INFO.getFormat() + name).lore(desc).build();
     }
 
     public static void loadMap() {
@@ -378,39 +359,11 @@ public class CTFUtil {
         return spawnRegions.stream().anyMatch(region -> CTFUtil.isInRegion(region, location));
     }
 
-    public static Location getCenter(Location location) {
-        double adjustX = location.getX() < 0 ? -0.5 : 0.5;
-        double adjustZ = location.getZ() > 0 ? -0.5 : 0.5;
-        return location.clone().add(adjustX, 0, adjustZ);
-    }
-
     public static void rewardKill(UUID uuid) {
         getPlayer(uuid).getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 2));
         CTFUser user = CTFUtil.getUser(uuid);
         user.getTeam().getMembers().forEach(u -> modifyEnergy(u, 20));
         playSoundForTeam(user.getTeam(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP);
-    }
-
-    public static void drawLine(Location point1, Location point2, double space, Color color, int size) {
-        double distance = point1.distance(point2);
-        Vector p1 = point1.toVector();
-        Vector p2 = point2.toVector();
-        Vector vector = p2.clone().subtract(p1).normalize().multiply(space);
-        double length = 0;
-        for (; length < distance; p1.add(vector)) {
-            point1.getWorld().spawnParticle(Particle.REDSTONE, p1.getX(), p1.getY(), p1.getZ(), 1, new Particle.DustOptions(color, size));
-            length += space;
-        }
-    }
-
-    public static List<Block> hollowTunnel(Location start, Vector vector, int length, int width, int depth) {
-        List<Block> blocks = new ArrayList<>();
-        BlockIterator depthIterator = new BlockIterator(start.getWorld(), start.toVector(), vector, 0, length);
-        while (depthIterator.hasNext()) {
-            Block node = depthIterator.next();
-            blocks.addAll(hollowRing(node.getLocation(), vector, length, width));
-        }
-        return blocks;
     }
 
     public static List<Block> hollowRing(Location start, Vector vector, int length, int width) {
@@ -438,12 +391,6 @@ public class CTFUtil {
         return blocks;
     }
 
-    public static List<Block> plane(Location start, Vector normal, int length, int width) {
-        Vector v1 = getOrthogonalVector(normal, 0);
-        Vector v2 = getOrthogonalVector(normal, 1);
-        return plane(start, v1, length, v2, width);
-    }
-
     public static List<Block> plane(Location start, Vector v1, int length, Vector v2, int width) {
         List<Block> plane = new ArrayList<>();
         BlockIterator lengthIterator = new BlockIterator(start.getWorld(), start.toVector(), v1, 0, length);
@@ -455,43 +402,6 @@ public class CTFUtil {
             }
         }
         return plane;
-    }
-
-    public static Vector simplifyDirection(Vector direction) {
-        return simpleDirections.stream().min((a, b) -> Float.compare(a.angle(direction), b.angle(direction))).get();
-    }
-
-    private static Set<Vector> getSimpleDirections() {
-        Set<Vector> vectors = new HashSet<>();
-        for (int x = -1; x <= 1; x++) {
-            for (int y = -1; y <= 1; y++) {
-                for (int z = -1; z <= 1; z++) {
-
-                    if (x == 0 && y == 0 && z == 0) {
-                        continue;
-                    }
-
-                    vectors.add(new Vector(x, y, z));
-                }
-            }
-        }
-        return vectors;
-    }
-
-    public static Vector getOrthogonalVector(Vector vector, int index) {
-        return getOrthogonalVectors(vector).get(index);
-    }
-
-    public static List<Vector> getOrthogonalVectors(Vector vector) {
-        List<Vector> vectors = new ArrayList<>();
-        double x = vector.getX();
-        double y = vector.getY();
-        double z = vector.getZ();
-        Vector v1 = new Vector(-y, x, 0);
-        Vector v2 = new Vector(x * z, y * z, -(x * x + y * y));
-        vectors.add(v1);
-        vectors.add(v2);
-        return vectors;
     }
 
     public static void setupSpectator(CTFUser user) {
@@ -548,109 +458,12 @@ public class CTFUtil {
         return nearbyUsers;
     }
 
-    public static <T> T getRandom(Collection<PotentialObject<T>> potentialObjects) {
-
-        if (potentialObjects.isEmpty()) {
-            return null;
-        }
-
-        LinkedList<PotentialObject<T>> linkedObjects = new LinkedList<>();
-        for (PotentialObject<T> potentialMaterial : potentialObjects) {
-            int lastPosition = linkedObjects.isEmpty() ? 0 : linkedObjects.getLast().getPosition();
-            potentialMaterial.setPosition(lastPosition + potentialMaterial.getProbability());
-            linkedObjects.add(potentialMaterial);
-        }
-        int randomPosition = ThreadLocalRandom.current().nextInt(0, linkedObjects.getLast().getPosition() + 1);
-        T winner = linkedObjects.stream().filter(o -> randomPosition <= o.getPosition()).min(Comparator.comparingInt(PotentialObject::getPosition)).get().getContent();
-        return winner;
-    }
-
     public static Team getEnemyTeam(CTFUser user) {
         return user.getTeam().getColor() == TeamColor.BLUE ? CTF.getInstance().getBlue() : CTF.getInstance().getRed();
     }
 
-    public static Zombie spawnAlibiPlayer(CTFUser user) {
-        Player player = getPlayer(user);
-        Zombie fakePlayer = player.getWorld().spawn(player.getLocation(), Zombie.class);
-        fakePlayer.setInvulnerable(true);
-        fakePlayer.setAI(false);
-        fakePlayer.getEquipment().setArmorContents(player.getEquipment().getArmorContents());
-        return fakePlayer;
-    }
-
-    public static void createExplosion(Location center, double radius, int power, Color... colors) {
-        Firework firework = (Firework) center.getWorld().spawnEntity(center, EntityType.FIREWORK);
-        FireworkMeta fireworkMeta = firework.getFireworkMeta();
-        fireworkMeta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.BALL_LARGE).withColor(colors).build());
-        fireworkMeta.setPower(0);
-        firework.setFireworkMeta(fireworkMeta);
-        firework.detonate();
-        center.getWorld().playSound(center, Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 2, 0);
-        getNearbyUsers(center, radius).stream().forEach(user -> {
-            Player player = getPlayer(user);
-            Vector vector = player.getLocation().toVector().subtract(center.toVector());
-            Vector push = vector.normalize().multiply(2).setY(0.5);
-            player.damage(power);
-            player.setVelocity(push);
-        });
-    }
-
-    public static String wrap(String string, int lineLength) {
-        StringBuilder b = new StringBuilder();
-        for (String line : string.split(Pattern.quote(LINEBREAK))) {
-            b.append(wrapLine(line, lineLength));
-        }
-        return b.toString();
-    }
-
-    public static CTFUser getUser(Player player) {
-        return getUser(player.getUniqueId());
-    }
-
-    public static CTFUser getUser(UUID uuid) {
-        return CTF.getInstance().getPlayerListener().getUserManager().getUser(uuid);
-    }
-
-    private static String wrapLine(String line, int lineLength) {
-        if (line.length() == 0) return LINEBREAK;
-        if (line.length() <= lineLength) return line + LINEBREAK;
-        String[] words = line.split(" ");
-        StringBuilder allLines = new StringBuilder();
-        StringBuilder trimmedLine = new StringBuilder();
-        for (String word : words) {
-            if (trimmedLine.length() + 1 + word.length() <= lineLength) {
-                trimmedLine.append(word).append(" ");
-            } else {
-                allLines.append(trimmedLine).append(LINEBREAK);
-                trimmedLine = new StringBuilder();
-                trimmedLine.append(word).append(" ");
-            }
-        }
-        if (trimmedLine.length() > 0) {
-            allLines.append(trimmedLine);
-        }
-        allLines.append(LINEBREAK);
-        return allLines.toString();
-    }
-
     public static List<Flag> getCapturedFlags(Team team) {
         return CTF.getInstance().getMap().getFlags().stream().filter(flag -> flag.getTeam() == team.getColor()).filter(flag -> flag.getStatus() == CaptureStatus.CAPTURED).toList();
-    }
-
-    public static Block getHighestBlock(int x, int z, World world) {
-        Block highest = null;
-        for (int y = 255; y >= 0; y--) {
-            Block block = world.getBlockAt(x, y, z);
-            if (block.getType().isSolid()) {
-                highest = block;
-                break;
-            }
-        }
-        return highest;
-    }
-
-    public static Set<PotentialObject<Color>> mixColors(Color primary, Color secondary, Color tertiary, int p1, int p2, int p3) {
-        return new HashSet<>(Arrays.asList(new PotentialObject<>(primary, p1), new PotentialObject<>(secondary, p2), new PotentialObject<>(tertiary, p3)));
     }
 
 }

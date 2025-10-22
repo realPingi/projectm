@@ -7,8 +7,9 @@ import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.user.CTFUserManager;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.MessageType;
 import com.yalcinkaya.ctf.util.TempBlock;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.MessageType;
 import fr.mrmicky.fastboard.FastBoard;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -77,13 +78,13 @@ public class PlayerListener implements Listener {
                         CTFUtil.clearPlayer(player);
                         CTFKit.setKit(user, kit);
                         CTFUtil.equipPlayer(player);
-                        player.sendMessage(CTFUtil.getCTFMessage(MessageType.INFO, ChatColor.GRAY + "You selected ", kit.getName(), ChatColor.GRAY + "."));
+                        player.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You selected ", kit.getName(), ChatColor.GRAY + "."));
                     } else {
                         CTFKit.setKit(user, kit);
                     }
                     event.getWhoClicked().closeInventory();
                 } else {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "This kit is already taken."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This kit is already taken."));
                 }
             }
         }

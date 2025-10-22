@@ -7,8 +7,9 @@ import com.yalcinkaya.ctf.map.Map;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.IntTuple;
-import com.yalcinkaya.ctf.util.MessageType;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.IntTuple;
+import com.yalcinkaya.util.MessageType;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -48,13 +49,13 @@ public class CaptureStageListener extends StageListener {
 
         if (CTFUtil.isInFlagRegion(against.getLocation()) || CTFUtil.isInFlagRegion(placed.getLocation()) || CTFUtil.isInSpawnRegion(placed.getLocation())) {
             event.setCancelled(true);
-            player.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Protected region."));
+            player.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Protected region."));
             return;
         }
 
         if (CTF.getInstance().getPlayerListener().isTempBlock(against)) {
             event.setCancelled(true);
-            player.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Can't build on temporary blocks."));
+            player.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Can't build on temporary blocks."));
             return;
         }
 
@@ -67,13 +68,13 @@ public class CaptureStageListener extends StageListener {
         if (heightMap.containsKey(placedTuple)) {
             y = heightMap.get(placedTuple);
         } else {
-            y = heightMap.containsKey(againstTuple) ? heightMap.get(againstTuple) : CTFUtil.getHighestBlock(against.getX(), against.getZ(), against.getWorld()).getY() + buildLimit;
+            y = heightMap.containsKey(againstTuple) ? heightMap.get(againstTuple) : CoreUtil.getHighestBlock(against.getX(), against.getZ(), against.getWorld()).getY() + buildLimit;
             heightMap.put(placedTuple, y);
         }
         placed.setType(material);
         if (placed.getY() > y) {
             event.setCancelled(true);
-            player.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Build limit reached."));
+            player.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Build limit reached."));
         }
     }
 
@@ -106,7 +107,7 @@ public class CaptureStageListener extends StageListener {
         }
 
         user.setEnergy(0);
-        event.setQuitMessage(CTFUtil.getCTFMessage(MessageType.BROADCAST, CTFUtil.getColoredName(user), " left the match."));
+        event.setQuitMessage(CoreUtil.getMessage(MessageType.BROADCAST, CTFUtil.getColoredName(user), " left the match."));
     }
 
     @EventHandler
@@ -155,7 +156,7 @@ public class CaptureStageListener extends StageListener {
             }
         }
 
-        event.setDeathMessage(CTFUtil.getCTFMessage(MessageType.BROADCAST, userName, deathMessage));
+        event.setDeathMessage(CoreUtil.getMessage(MessageType.BROADCAST, userName, deathMessage));
         user.setLastDamager(null);
 
         if (user.isCapturing()) {
@@ -185,7 +186,7 @@ public class CaptureStageListener extends StageListener {
                 CTFUser damagerUser = CTFUtil.getUser(damager);
 
                 if (damager.getItemInHand().getType() == Material.IRON_AXE) {
-                    damagerUser.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Axes don't deal damage."));
+                    damagerUser.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Axes don't deal damage."));
                     event.setCancelled(true);
                 }
 
@@ -289,7 +290,7 @@ public class CaptureStageListener extends StageListener {
         }
         if (CTFUtil.isInFlagRegion(user.getTeam().getColor().toString(), event.getTo())) {
             event.setCancelled(true);
-            user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "You can't enter your own flag region."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You can't enter your own flag region."));
         }
     }
 
@@ -303,7 +304,7 @@ public class CaptureStageListener extends StageListener {
 
         if (CTFUtil.isInFlagRegion(user.getTeam().getColor().toString(), event.getTo())) {
             event.setCancelled(true);
-            user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "You can't enter your own flag region."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You can't enter your own flag region."));
         }
     }
 
@@ -336,27 +337,27 @@ public class CaptureStageListener extends StageListener {
             if (nearbyFlag != null) {
 
                 if (nearbyFlag.getStatus() == CaptureStatus.CAPTURED) {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "This flag is already captured."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This flag is already captured."));
                     return;
                 }
 
                 if (nearbyFlag.getStatus() == CaptureStatus.DANGER) {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "This flag is being captured right now."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This flag is being captured right now."));
                     return;
                 }
 
                 if (user.isCapturing()) {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "You are already capturing a flag."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are already capturing a flag."));
                     return;
                 }
 
                 if (user.getEnergy() < 100) {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "Your energy resources are insufficient."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Your energy resources are insufficient."));
                     return;
                 }
 
                 if (user.isPreventCapture()) {
-                    user.sendMessage(CTFUtil.getCTFMessage(MessageType.WARNING, ChatColor.GRAY + "You can't capture in this state."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You can't capture in this state."));
                     return;
                 }
 
@@ -419,7 +420,7 @@ public class CaptureStageListener extends StageListener {
 
     @Override
     public String getJoinMessage(CTFUser user) {
-        return CTFUtil.getCTFMessage(MessageType.BROADCAST, CTFUtil.getColoredName(user), " rejoined the match.");
+        return CoreUtil.getMessage(MessageType.BROADCAST, CTFUtil.getColoredName(user), " rejoined the match.");
     }
 
 }

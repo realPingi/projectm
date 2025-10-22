@@ -6,6 +6,7 @@ import com.yalcinkaya.ctf.kits.Create;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import com.yalcinkaya.ctf.util.TempBlock;
+import com.yalcinkaya.util.CoreUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -24,9 +25,9 @@ public class Wall extends ClickItem implements EnergyConsumer {
     public boolean tryClick(CTFUser activator) {
         Player player = CTFUtil.getPlayer(activator);
         Vector direction = player.getEyeLocation().getDirection().normalize();
-        Vector simplified = CTFUtil.simplifyDirection(direction);
+        Vector simplified = CoreUtil.simplifyDirection(direction);
         Location start = player.getLocation().clone().add(0, 1, 0).add(simplified.clone().multiply(3));
-        CTFUtil.centeredPlane(start, simplified, length, width).forEach(block -> new TempBlock(block, CTFUtil.getRandom(Create.materials), true, duration));
+        CTFUtil.centeredPlane(start, simplified, length, width).forEach(block -> new TempBlock(block, CoreUtil.getRandom(Create.materials), true, duration));
         return true;
     }
 

@@ -2,7 +2,7 @@ package com.yalcinkaya.ctf.kit;
 
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.MessageType;
+import com.yalcinkaya.util.MessageType;
 
 public abstract class Wave extends ClickItem implements EnergyConsumer {
 

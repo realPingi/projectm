@@ -1,8 +1,6 @@
 package com.yalcinkaya.lobby.hotbar;
 
-import com.yalcinkaya.lobby.Lobby;
-import com.yalcinkaya.lobby.queue.Queue;
-import com.yalcinkaya.lobby.util.ItemBuilder;
+import com.yalcinkaya.util.ItemBuilder;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

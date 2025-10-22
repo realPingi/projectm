@@ -8,7 +8,7 @@ import com.yalcinkaya.ctf.listener.CaptureStageListener;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.MathUtil;
+import com.yalcinkaya.util.MathUtil;
 import fr.mrmicky.fastboard.FastBoard;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -80,7 +80,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             board.updateLines(lines);
 
             if (ctfUser.isCapturing()) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 2, 0));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 2, 0));
                 if (CTFUtil.isInSpawn(ctfUser)) {
                     CTFUtil.secureFlag(ctfUser);
                 }

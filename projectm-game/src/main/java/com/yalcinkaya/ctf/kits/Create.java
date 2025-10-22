@@ -5,7 +5,7 @@ import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.kits.clickItems.Tunnel;
 import com.yalcinkaya.ctf.kits.clickItems.Wall;
-import com.yalcinkaya.ctf.util.PotentialObject;
+import com.yalcinkaya.util.PotentialObject;
 import org.bukkit.Material;
 
 import java.util.Arrays;

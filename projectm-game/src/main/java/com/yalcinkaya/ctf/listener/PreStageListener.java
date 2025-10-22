@@ -3,7 +3,7 @@ package com.yalcinkaya.ctf.listener;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.ctf.util.ItemBuilder;
+import com.yalcinkaya.util.ItemBuilder;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -75,7 +75,7 @@ public class PreStageListener extends StageListener {
     @Override
     public void setupPlayer(Player player) {
         CTFUtil.teleportPlayerMidMap(CTFUtil.getUser(player.getUniqueId()));
-        player.getInventory().setItem(4, new ItemBuilder(Material.ENDER_CHEST).name(ChatColor.GOLD + "Select your kit").build());
+        player.getInventory().setItem(4, ItemBuilder.of(Material.ENDER_CHEST).name("<italic:false><gold>Select your kit<gold>").build());
     }
 
     @Override

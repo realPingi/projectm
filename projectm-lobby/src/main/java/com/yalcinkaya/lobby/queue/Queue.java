@@ -4,20 +4,17 @@ import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.lobby.util.MessageType;
+import com.yalcinkaya.util.CoreUtil;
+import com.yalcinkaya.util.MessageType;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.HashSet;
@@ -106,7 +103,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param matches The {@link Queueable}s that were previously matched.
      */
     public void onMatchFound(Set<T> matches) {
-        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "Match found for ", getName(), ChatColor.GRAY + "! Starting game server..."))));
+        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "Match found for ", getName(), ChatColor.GRAY + "! Starting game server..."))));
     }
 
     /**
@@ -158,9 +155,9 @@ public abstract class Queue<T extends Queueable> implements Runnable {
             if (isQueued(sender)) {
                 T queueable = find(sender);
                 unqueue(queueable);
-                queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
+                queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
             } else {
-                sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued."));
+                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued."));
             }
         } else {
             if (!isQueued(sender)) {
@@ -170,18 +167,18 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 }
                 MatchLookupService lookup = new MatchLookupService();
                 if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerWaitingForMatch)) {
-                    sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You have already been matched. Waiting for game server..."));
+                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You have already been matched. Waiting for game server..."));
                     return;
                 }
                 if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInActiveMatch)) {
-                    sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
+                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
                     return;
                 }
                 if (queue(queueable)) {
-                    queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(LobbyUtil.getLobbyMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
+                    queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
                 }
             } else {
-                sender.sendMessage(LobbyUtil.getLobbyMessage(MessageType.WARNING, ChatColor.GRAY + "You are already queued."));
+                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are already queued."));
             }
         }
     }
