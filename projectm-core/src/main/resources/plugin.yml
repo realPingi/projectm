@@ -1,0 +1,5 @@
+name: projectm-core
+main: com.yalcinkaya.core.Core
+version: 1.0
+api-version: 1.21
+
