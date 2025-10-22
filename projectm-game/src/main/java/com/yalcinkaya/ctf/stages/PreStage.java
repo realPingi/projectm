@@ -36,8 +36,6 @@ public class PreStage extends CTFStage<PreStageListener> {
         setCountdown(true);
 
         World world = Bukkit.getWorld(ctfWorld);
-        world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, false);
-        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
         world.setTime(6000);
 
         CTFUtil.loadMap();
