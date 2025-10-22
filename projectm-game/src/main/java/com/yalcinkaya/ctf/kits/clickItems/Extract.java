@@ -1,11 +1,11 @@
 package com.yalcinkaya.ctf.kits.clickItems;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.PotentialObject;
 import com.yalcinkaya.ctf.kit.AffectType;
 import com.yalcinkaya.ctf.kit.Beam;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.PotentialObject;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Sound;

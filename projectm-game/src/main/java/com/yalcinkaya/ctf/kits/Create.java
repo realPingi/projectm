@@ -1,11 +1,11 @@
 package com.yalcinkaya.ctf.kits;
 
+import com.yalcinkaya.core.util.PotentialObject;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.kits.clickItems.Tunnel;
 import com.yalcinkaya.ctf.kits.clickItems.Wall;
-import com.yalcinkaya.util.PotentialObject;
 import org.bukkit.Material;
 
 import java.util.Arrays;

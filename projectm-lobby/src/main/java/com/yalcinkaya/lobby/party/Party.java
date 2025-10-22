@@ -3,7 +3,6 @@ package com.yalcinkaya.lobby.party;
 import com.yalcinkaya.lobby.queue.Queueable;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import lombok.Data;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Arrays;
 import java.util.HashSet;

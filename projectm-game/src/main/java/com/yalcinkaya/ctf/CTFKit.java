@@ -5,7 +5,6 @@ import com.yalcinkaya.ctf.kits.*;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import lombok.Getter;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -56,7 +55,7 @@ public enum CTFKit {
     }
 
     private static String emph(String string) {
-        return ChatColor.LIGHT_PURPLE + string + ChatColor.GRAY;
+        return "<light_purple>" + string + "</light_purple>";
     }
 
     public Kit getKit() {

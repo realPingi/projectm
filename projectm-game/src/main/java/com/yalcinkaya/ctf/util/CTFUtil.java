@@ -16,6 +16,8 @@ import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.yalcinkaya.core.ProjectM;
+import com.yalcinkaya.core.util.*;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.CTFKit;
 import com.yalcinkaya.ctf.CTFMap;
@@ -29,7 +31,7 @@ import com.yalcinkaya.ctf.stages.CaptureStage;
 import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
-import com.yalcinkaya.util.*;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -40,7 +42,8 @@ import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.file.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -67,6 +70,10 @@ public class CTFUtil {
 
     public static Set<PotentialObject<Color>> getColorMix(CTFUser user) {
         return user.getTeam().getColor() == TeamColor.BLUE ? blueColors : redColors;
+    }
+
+    public static void sendMessage(Player player, MessageType type, String... strings) {
+        getUser(player).sendMessage(CoreUtil.getMessage(type, strings));
     }
 
     public static void equipPlayer(Player player) {
@@ -152,16 +159,8 @@ public class CTFUtil {
     }
 
     public static void updateNametag(CTFUser user) {
-
-        if (!Bukkit.getPluginManager().isPluginEnabled("TAB")) {
-            return;
-        }
-
-        ChatColor color = user.getTeam() == null ? ChatColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? ChatColor.BLUE : ChatColor.RED);
-        String bukkitCode = color.toString();
-        bukkitCode.replace(ChatColor.COLOR_CHAR, '&');
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + CTFUtil.getPlayer(user).getName() + " tagprefix " + bukkitCode);
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "tab player " + CTFUtil.getPlayer(user).getName() + " tabprefix " + bukkitCode);
+        NamedTextColor color = user.getTeam() == null ? NamedTextColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? NamedTextColor.BLUE : NamedTextColor.RED);
+        ProjectM.getInstance().getNametagManager().setPlayerNametag(getPlayer(user), color.toString(), color);
     }
 
     public static void modifyEnergy(CTFUser user, double energy) {
@@ -204,7 +203,7 @@ public class CTFUtil {
         setCaptureStatus(flag, CaptureStatus.DANGER);
         displayFlag(user);
         playSoundForAll(Sound.BLOCK_PISTON_CONTRACT);
-        broadcastMessageForAll(MessageType.BROADCAST, getColoredName(user), " picked up a flag!");
+        broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " picked up a flag!");
     }
 
     public static void restoreFlag(CTFUser user) {
@@ -213,7 +212,7 @@ public class CTFUtil {
         user.setFlag(null);
         user.getFlagDisplay().cancel();
         playSoundForAll(Sound.BLOCK_FENCE_GATE_CLOSE);
-        broadcastMessageForAll(MessageType.BROADCAST, getColoredName(user), " lost the flag!");
+        broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " lost the flag!");
     }
 
     public static void secureFlag(CTFUser user) {
@@ -223,7 +222,7 @@ public class CTFUtil {
         user.getFlagDisplay().cancel();
         getPlayer(user).setMaxHealth(40);
         playSoundForAll(Sound.ENTITY_ENDER_DRAGON_FLAP);
-        broadcastMessageForAll(MessageType.BROADCAST, getColoredName(user), " successfully captured a flag!");
+        broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " successfully captured a flag!");
     }
 
     public static void setCaptureStatus(Flag flag, CaptureStatus status) {
@@ -232,8 +231,8 @@ public class CTFUtil {
     }
 
     public static String getColoredName(CTFUser user) {
-        ChatColor teamColor = user.getTeam() == null ? ChatColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? ChatColor.BLUE : ChatColor.RED);
-        return teamColor + getPlayer(user).getName() + ChatColor.GRAY;
+        String teamColor = user.getTeam() == null ? "<gray>" : (user.getTeam().getColor() == TeamColor.BLUE ? "<blue>" : "<red>");
+        return teamColor + getPlayer(user).getName() + "<gray>";
     }
 
     public static void updateFlagPillar(Flag flag, boolean restore) {
@@ -289,11 +288,11 @@ public class CTFUtil {
     }
 
     public static ItemStack createIcon(String name, Material material) {
-        return ItemBuilder.of(material).name(MessageType.INFO.getFormat() + name).build();
+        return ItemBuilder.of(material).name("<italic:false><light_purple>" + name).build();
     }
 
     public static ItemStack createIcon(String name, Material material, String desc) {
-        return ItemBuilder.of(material).name(MessageType.INFO.getFormat() + name).lore(desc).build();
+        return ItemBuilder.of(material).name("<italic:false><light_purple>" + name).wrapLore(desc, "<italic:false><gray>").build();
     }
 
     public static void loadMap() {

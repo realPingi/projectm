@@ -2,7 +2,7 @@ name: projectm-lobby
 main: com.yalcinkaya.lobby.Lobby
 version: 1.0
 api-version: 1.21
-depend: [ DecentHolograms ]
+depend: [ DecentHolograms, projectm-core ]
 
 commands:
   reconnect:

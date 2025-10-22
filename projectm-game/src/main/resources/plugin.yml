@@ -2,7 +2,7 @@ name: projectm-game
 main: com.yalcinkaya.ctf.CTF
 version: 1.0
 api-version: 1.21
-depend: [ TAB ]
+depend: [projectm-core]
 
 commands:
   kit:

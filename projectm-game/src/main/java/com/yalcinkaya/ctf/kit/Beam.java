@@ -1,15 +1,15 @@
 package com.yalcinkaya.ctf.kit;
 
+import com.yalcinkaya.core.util.PotentialObject;
+import com.yalcinkaya.core.util.parametrization.VectorUtil;
+import com.yalcinkaya.core.util.parametrization.builder.CurveBuilder;
+import com.yalcinkaya.core.util.parametrization.builder.Illustrations;
+import com.yalcinkaya.core.util.parametrization.builder.MultiColorParticle;
+import com.yalcinkaya.core.util.parametrization.domains.Interval;
+import com.yalcinkaya.core.util.parametrization.functions.Curve;
+import com.yalcinkaya.core.util.parametrization.types.CurveTypes;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.PotentialObject;
-import com.yalcinkaya.util.parametrization.VectorUtil;
-import com.yalcinkaya.util.parametrization.builder.CurveBuilder;
-import com.yalcinkaya.util.parametrization.builder.Illustrations;
-import com.yalcinkaya.util.parametrization.builder.MultiColorParticle;
-import com.yalcinkaya.util.parametrization.domains.Interval;
-import com.yalcinkaya.util.parametrization.functions.Curve;
-import com.yalcinkaya.util.parametrization.types.CurveTypes;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.World;

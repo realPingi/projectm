@@ -1,12 +1,12 @@
 package com.yalcinkaya.ctf.stages;
 
 import com.google.gson.Gson;
+import com.yalcinkaya.core.util.MathUtil;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.listener.PreStageListener;
 import com.yalcinkaya.ctf.net.TeamConfigHolder;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.MathUtil;
 import fr.mrmicky.fastboard.FastBoard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -70,8 +70,8 @@ public class PreStage extends CTFStage<PreStageListener> {
 
             String kitName = user.getKit() == null ? "None" : user.getKit().getName();
 
-            board.updateTitle(ChatColor.BOLD + "" + ChatColor.GOLD + "ProjectM");
-            board.updateLines(ChatColor.GRAY + "Starting in: " + ChatColor.GOLD + MathUtil.getReadableSeconds(getTimer()),
+            board.updateTitle(ChatColor.GOLD + "" + ChatColor.BOLD + "ProjectM");
+            board.updateLines(ChatColor.GRAY + "Starting in: " + ChatColor.GOLD + "" + MathUtil.getReadableSeconds(getTimer()),
                     ChatColor.GRAY + "Kit: " + ChatColor.GOLD + kitName);
         }
     }

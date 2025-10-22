@@ -1,12 +1,12 @@
 package com.yalcinkaya.ctf.kits.clickItems;
 
+import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.kits.Create;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import com.yalcinkaya.ctf.util.TempBlock;
-import com.yalcinkaya.util.CoreUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;

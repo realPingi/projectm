@@ -1,12 +1,11 @@
 package com.yalcinkaya.lobby.party;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
@@ -48,7 +47,7 @@ public class PartyManager {
         // Timeout-Task erstellen
         BukkitTask task = Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> {
             removeInvite(invited.getUuid());
-            invited.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "The invitation from ", LobbyUtil.getPlayer(inviter).getName(), ChatColor.GRAY + " expired."));
+            invited.sendMessage(CoreUtil.getMessage(MessageType.INFO, "The invitation from ", LobbyUtil.getPlayer(inviter).getName(), " expired."));
         }, INVITE_TIMEOUT_SECONDS * 20L); // 20 Ticks pro Sekunde
 
         // Einladung speichern
@@ -80,7 +79,7 @@ public class PartyManager {
         party.getUUIDs().forEach(memberUuid -> {
             LobbyUser memberUser = LobbyUtil.getUser(memberUuid);
             if (memberUser != null) {
-                memberUser.sendMessage(CoreUtil.getMessage(MessageType.INFO,  LobbyUtil.getPlayer(user).getName(), ChatColor.GRAY + " has joined the party."));
+                memberUser.sendMessage(CoreUtil.getMessage(MessageType.INFO,  "", LobbyUtil.getPlayer(user).getName(), " has joined the party."));
             }
         });
 

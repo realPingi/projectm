@@ -1,9 +1,9 @@
 package com.yalcinkaya.lobby.user;
 
+import com.yalcinkaya.core.user.User;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queueable;
-import com.yalcinkaya.user.User;
 
 import java.util.Collections;
 import java.util.HashSet;

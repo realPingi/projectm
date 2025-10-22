@@ -1,19 +1,17 @@
 package com.yalcinkaya.ctf.listener;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.CTFKit;
 import com.yalcinkaya.ctf.stages.CaptureStage;
-import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.user.CTFUserManager;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import com.yalcinkaya.ctf.util.TempBlock;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import fr.mrmicky.fastboard.FastBoard;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -27,7 +25,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRecipeDiscoverEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -43,7 +40,7 @@ public class PlayerListener implements Listener {
 
     private final CTFUserManager userManager;
     private final List<TempBlock> tempBlocks = new ArrayList<>();
-    private final Inventory kitInventory = Bukkit.createInventory(null, 27, MessageType.INFO.getFormat() + "Kit selection");
+    private final Inventory kitInventory = Bukkit.createInventory(null, 27, "Kit selection");
 
     public PlayerListener(CTFUserManager userManager) {
         this.userManager = userManager;
@@ -78,13 +75,13 @@ public class PlayerListener implements Listener {
                         CTFUtil.clearPlayer(player);
                         CTFKit.setKit(user, kit);
                         CTFUtil.equipPlayer(player);
-                        player.sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You selected ", kit.getName(), ChatColor.GRAY + "."));
                     } else {
                         CTFKit.setKit(user, kit);
                     }
+                    user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "You selected ", kit.getName(), "."));
                     event.getWhoClicked().closeInventory();
                 } else {
-                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "This kit is already taken."));
+                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "This kit is already taken."));
                 }
             }
         }
@@ -122,13 +119,6 @@ public class PlayerListener implements Listener {
         if (getUserManager().getUser(event.getPlayer().getUniqueId()).isSpectating() || (isTempBlock(event.getBlock()) && getFromBlock(event.getBlock()).isUnbreakable())) {
             event.setCancelled(true);
         }
-    }
-
-    @EventHandler
-    public void onPlayerChat(AsyncPlayerChatEvent event) {
-        CTFUser user = CTFUtil.getUser(event.getPlayer().getUniqueId());
-        ChatColor teamColor = user.getTeam() == null ? ChatColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? ChatColor.BLUE : ChatColor.RED);
-        event.setFormat(teamColor + "%s" + ChatColor.GOLD + " >> " + ChatColor.GRAY + "%s");
     }
 
     @EventHandler

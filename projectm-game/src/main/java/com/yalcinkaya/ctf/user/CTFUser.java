@@ -1,10 +1,10 @@
 package com.yalcinkaya.ctf.user;
 
+import com.yalcinkaya.core.user.User;
+import com.yalcinkaya.core.util.SmartArmorStand;
 import com.yalcinkaya.ctf.flag.Flag;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.team.Team;
-import com.yalcinkaya.util.SmartArmorStand;
-import com.yalcinkaya.user.User;
 import fr.mrmicky.fastboard.FastBoard;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

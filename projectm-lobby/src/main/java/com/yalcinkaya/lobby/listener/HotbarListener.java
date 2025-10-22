@@ -3,18 +3,13 @@ package com.yalcinkaya.lobby.listener;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.hotbar.HotbarManager;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.checkerframework.checker.units.qual.A;
 
-import java.awt.*;
 import java.util.Set;
 
 public class HotbarListener implements Listener {

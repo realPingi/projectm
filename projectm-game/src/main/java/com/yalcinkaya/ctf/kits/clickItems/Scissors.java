@@ -1,19 +1,18 @@
 package com.yalcinkaya.ctf.kits.clickItems;
 
+import com.yalcinkaya.core.util.SmartRunnable;
+import com.yalcinkaya.core.util.parametrization.VectorUtil;
+import com.yalcinkaya.core.util.parametrization.builder.Illustrations;
+import com.yalcinkaya.core.util.parametrization.builder.MultiColorParticle;
+import com.yalcinkaya.core.util.parametrization.builder.SurfaceBuilder;
+import com.yalcinkaya.core.util.parametrization.domains.Area;
+import com.yalcinkaya.core.util.parametrization.functions.Surface;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.Counter;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.SmartRunnable;
-import com.yalcinkaya.util.parametrization.VectorUtil;
-import com.yalcinkaya.util.parametrization.builder.Illustrations;
-import com.yalcinkaya.util.parametrization.builder.MultiColorParticle;
-import com.yalcinkaya.util.parametrization.builder.SurfaceBuilder;
-import com.yalcinkaya.util.parametrization.domains.Area;
-import com.yalcinkaya.util.parametrization.functions.Surface;
 import lombok.Getter;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -31,7 +30,7 @@ public class Scissors extends ClickItem implements EnergyConsumer {
 
     private final int stacksNeeded = 5;
     @Getter
-    private final Counter stacks = new Counter("Stacks", ChatColor.BLUE, stacksNeeded * 8);
+    private final Counter stacks = new Counter("Stacks", "<blue>", stacksNeeded * 8);
 
     @Override
     public boolean tryClick(CTFUser activator) {

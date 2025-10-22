@@ -109,7 +109,6 @@ public class MatchStarter {
 
         } catch (IOException e) {
             Lobby.getInstance().getLogger().severe("Failed to send Connect message to proxy: " + e.getMessage());
-            player.sendMessage("§cInterner Fehler bei der Weiterleitung.");
         }
     }
 

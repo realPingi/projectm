@@ -6,7 +6,6 @@ import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 
 import java.util.*;
 import java.util.stream.Collectors;

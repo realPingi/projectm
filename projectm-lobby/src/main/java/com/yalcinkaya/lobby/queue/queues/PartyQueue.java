@@ -1,18 +1,19 @@
 package com.yalcinkaya.lobby.queue.queues;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
-import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class PartyQueue extends Queue<Party> {
@@ -44,11 +45,11 @@ public class PartyQueue extends Queue<Party> {
     public Party queuebalize(LobbyUser user) {
         Party party = user.getParty();
         if (party == null) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You must create a party first."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You must create a party first."));
             return null;
         }
         if (party.size() != getPartySize()) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Invalid party size. You need " + getPartySize() + " members."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Invalid party size. You need ", "" + getPartySize(), " members."));
             return null;
         }
         return party;

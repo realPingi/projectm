@@ -1,15 +1,14 @@
 package com.yalcinkaya.ctf.kits.clickItems;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.Counter;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.inventory.ItemStack;
@@ -19,7 +18,7 @@ public class Reflect extends ClickItem implements EnergyConsumer {
     private final ItemStack item = CTFUtil.createIcon("Reflect", Material.DIAMOND);
     private final int chargesNeeded = 20;
     @Getter
-    private final Counter charges = new Counter("Charges", ChatColor.BLUE, chargesNeeded);
+    private final Counter charges = new Counter("Charges", "<blue>", chargesNeeded);
     @Getter
     @Setter
     private boolean rage;
@@ -28,7 +27,7 @@ public class Reflect extends ClickItem implements EnergyConsumer {
     public boolean tryClick(CTFUser activator) {
 
         if (rage) {
-            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Your counter is still active."));
+            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Your counter is still active."));
             return false;
         }
 
@@ -39,7 +38,7 @@ public class Reflect extends ClickItem implements EnergyConsumer {
 
         rage = true;
         charges.reset();
-        activator.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, ChatColor.GRAY + "Your counter is now active."));
+        activator.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Your counter is now active."));
         return true;
     }
 

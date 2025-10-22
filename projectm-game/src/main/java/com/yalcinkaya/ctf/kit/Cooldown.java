@@ -1,7 +1,7 @@
 package com.yalcinkaya.ctf.kit;
 
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
+import com.yalcinkaya.core.util.MessageType;
+import com.yalcinkaya.ctf.util.CTFUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.entity.Player;
@@ -38,6 +38,6 @@ public class Cooldown {
     }
 
     public void sendWarning(Player player) {
-        player.sendMessage(CoreUtil.getMessage(MessageType.WARNING, org.bukkit.ChatColor.GRAY + "You are still on cooldown for ", "" + getSecondsLeft(), org.bukkit.ChatColor.GRAY + " seconds."));
+        CTFUtil.sendMessage(player, MessageType.WARNING, "You are still on cooldown for ", "" + getSecondsLeft(), " seconds.");
     }
 }

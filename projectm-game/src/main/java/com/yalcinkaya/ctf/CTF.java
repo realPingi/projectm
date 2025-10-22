@@ -1,5 +1,6 @@
 package com.yalcinkaya.ctf;
 
+import com.yalcinkaya.core.util.IntTuple;
 import com.yalcinkaya.ctf.commands.*;
 import com.yalcinkaya.ctf.listener.KitListener;
 import com.yalcinkaya.ctf.listener.PlayerListener;
@@ -9,7 +10,6 @@ import com.yalcinkaya.ctf.stages.PreStage;
 import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUserManager;
-import com.yalcinkaya.util.IntTuple;
 import lombok.Getter;
 import lombok.Setter;
 import okhttp3.OkHttpClient;

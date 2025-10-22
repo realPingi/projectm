@@ -1,15 +1,14 @@
 package com.yalcinkaya.ctf.kits.clickItems;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
+import com.yalcinkaya.core.util.SmoothTravel;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
-import com.yalcinkaya.util.SmoothTravel;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -32,12 +31,12 @@ public class Rewind extends ClickItem implements EnergyConsumer {
     public boolean tryClick(CTFUser activator) {
 
         if (!isSafeTravel()) {
-            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Warp destination was too dangerous."));
+            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Warp destination was too dangerous."));
             return false;
         }
 
         if (!isCompleted()) {
-            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Can't cancel the warp process."));
+            activator.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Can't cancel the warp process."));
             return false;
         }
 

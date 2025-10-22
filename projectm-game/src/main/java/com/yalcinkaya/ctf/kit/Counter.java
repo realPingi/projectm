@@ -1,26 +1,25 @@
 package com.yalcinkaya.ctf.kit;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.user.CTFUser;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.ChatColor;
 
 @Getter
 public class Counter {
 
     private String name;
-    private ChatColor color;
+    private String color;
     @Setter
     private int count;
     private int maxCount;
 
-    public Counter(String name, ChatColor color) {
+    public Counter(String name, String color) {
         new Counter(name, color, 0);
     }
 
-    public Counter(String name, ChatColor color, int maxCount) {
+    public Counter(String name, String color, int maxCount) {
         this.name = name;
         this.color = color;
         this.maxCount = maxCount;
@@ -31,7 +30,7 @@ public class Counter {
     }
 
     public void sendWarning(CTFUser user) {
-        user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Not enough " + name + "."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Not enough ", name, "."));
     }
 
     public void increase() {

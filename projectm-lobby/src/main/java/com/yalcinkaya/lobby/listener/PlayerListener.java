@@ -1,9 +1,10 @@
 package com.yalcinkaya.lobby.listener;
 
+import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.util.LobbyUtil;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,6 +21,11 @@ public class PlayerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         event.setJoinMessage(null);
         Player player = event.getPlayer();
+        if (player.isOp()) {
+            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, "op", NamedTextColor.DARK_RED);
+        } else {
+            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, "default", NamedTextColor.GRAY);
+        }
         Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> {
             Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
             player.teleport(new Location(player.getWorld(), 0, 0, 0));
@@ -68,8 +74,4 @@ public class PlayerListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler
-    public void onChat(AsyncPlayerChatEvent event) {
-        ;
-    }
 }

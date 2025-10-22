@@ -86,11 +86,8 @@ public class Lobby extends JavaPlugin {
 
             player.sendPluginMessage(this, PROXY_CHANNEL, b.toByteArray());
 
-            player.sendMessage("§bMatch gefunden! Verbinde dich mit dem Server...");
-
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Failed to send connect message to proxy for player " + player.getName(), e);
-            player.sendMessage("§cInterner Fehler bei der Verbindung. Bitte melde diesen Fehler.");
         }
     }
 

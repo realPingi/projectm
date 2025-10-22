@@ -2,7 +2,9 @@ package com.yalcinkaya.lobby.net;
 
 import com.google.gson.*;
 import com.google.gson.annotations.SerializedName;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.bukkit.Bukkit;
 
 import java.io.IOException;

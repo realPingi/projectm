@@ -1,16 +1,15 @@
 package com.yalcinkaya.lobby.queue;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchLookupService;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MessageType;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Villager;
@@ -103,7 +102,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      * @param matches The {@link Queueable}s that were previously matched.
      */
     public void onMatchFound(Set<T> matches) {
-        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "Match found for ", getName(), ChatColor.GRAY + "! Starting game server..."))));
+        matches.forEach(match -> match.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, "Match found for ", getName(), "! Starting game server..."))));
     }
 
     /**
@@ -155,9 +154,9 @@ public abstract class Queue<T extends Queueable> implements Runnable {
             if (isQueued(sender)) {
                 T queueable = find(sender);
                 unqueue(queueable);
-                queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You left ", getName(), ChatColor.GRAY + ".")));
+                queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, "You left ", getName(), ".")));
             } else {
-                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are not queued."));
+                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are not queued."));
             }
         } else {
             if (!isQueued(sender)) {
@@ -167,18 +166,18 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                 }
                 MatchLookupService lookup = new MatchLookupService();
                 if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerWaitingForMatch)) {
-                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You have already been matched. Waiting for game server..."));
+                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You have already been matched. Waiting for game server..."));
                     return;
                 }
                 if (queueable.getUUIDs().stream().anyMatch(lookup::isPlayerInActiveMatch)) {
-                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "Your match is still running. Use ", "/reconnect", ChatColor.GRAY + "."));
+                    sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Your match is still running. Use ", "/reconnect", "."));
                     return;
                 }
                 if (queue(queueable)) {
-                    queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, ChatColor.GRAY + "You joined ", getName(), ChatColor.GRAY + ".")));
+                    queueable.getUUIDs().forEach(uuid -> LobbyUtil.getUser(uuid).sendMessage(CoreUtil.getMessage(MessageType.INFO, "You joined ", getName(), ".")));
                 }
             } else {
-                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are already queued."));
+                sender.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are already queued."));
             }
         }
     }
@@ -204,8 +203,8 @@ public abstract class Queue<T extends Queueable> implements Runnable {
                     hologramName,
                     getPhysicalEntry().clone().add(0, 3, 0),
                     List.of(
-                            ChatColor.GOLD + "--- " + getName() + " ---",
-                            ChatColor.GRAY + "Queuing >> " + ChatColor.GOLD + getQueued()
+                            "&6" + "--- " + getName() + " ---",
+                            "&7" + "Queuing >> " + "&6" + getQueued()
                     )
             );
             dummy = (Villager) getPhysicalEntry().getWorld().spawnEntity(getPhysicalEntry(), EntityType.VILLAGER);
@@ -221,7 +220,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         }
 
         public void update() {
-            DHAPI.setHologramLine(hologram, 1, ChatColor.GRAY + "Queuing >> " + ChatColor.GOLD + getQueued());
+            DHAPI.setHologramLine(hologram, 1, "&7" + "Queuing >> " + "&6" + getQueued());
         }
 
     }

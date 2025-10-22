@@ -1,17 +1,16 @@
 package com.yalcinkaya.ctf.kit;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MathUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.CoreUtil;
-import com.yalcinkaya.util.MathUtil;
-import com.yalcinkaya.util.MessageType;
-import org.bukkit.ChatColor;
 
 public interface EnergyConsumer {
 
     default boolean tryConsume(CTFUser user) {
         if (!hasEnergy(user)) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are missing ", "" + getMissingEnergy(user), ChatColor.GRAY + " energy."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are missing ", "" + getMissingEnergy(user), " energy."));
             return false;
         } else {
             consume(user);
@@ -21,7 +20,7 @@ public interface EnergyConsumer {
 
     default boolean checkEnergy(CTFUser user) {
         if (!hasEnergy(user)) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, ChatColor.GRAY + "You are missing ", "" + getMissingEnergy(user), ChatColor.GRAY + " energy."));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are missing ", "" + getMissingEnergy(user), " energy."));
             return false;
         }
         return true;

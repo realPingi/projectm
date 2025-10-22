@@ -1,19 +1,22 @@
 package com.yalcinkaya.ctf.kits;
 
+import com.yalcinkaya.core.util.ItemBuilder;
+import com.yalcinkaya.core.util.MessageType;
+import com.yalcinkaya.core.util.SmartRunnable;
+import com.yalcinkaya.core.util.SmoothTravel;
+import com.yalcinkaya.core.util.parametrization.builder.Illustrations;
+import com.yalcinkaya.core.util.parametrization.builder.MultiColorParticle;
+import com.yalcinkaya.core.util.parametrization.builder.SurfaceBuilder;
+import com.yalcinkaya.core.util.parametrization.domains.Area;
+import com.yalcinkaya.core.util.parametrization.functions.Surface;
+import com.yalcinkaya.core.util.parametrization.types.SurfaceTypes;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.kit.Cooldown;
 import com.yalcinkaya.ctf.kit.EnergyConsumer;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.kit.MultiCooldown;
 import com.yalcinkaya.ctf.user.CTFUser;
-import com.yalcinkaya.ctf.util.*;
-import com.yalcinkaya.util.*;
-import com.yalcinkaya.util.parametrization.builder.Illustrations;
-import com.yalcinkaya.util.parametrization.builder.MultiColorParticle;
-import com.yalcinkaya.util.parametrization.builder.SurfaceBuilder;
-import com.yalcinkaya.util.parametrization.domains.Area;
-import com.yalcinkaya.util.parametrization.functions.Surface;
-import com.yalcinkaya.util.parametrization.types.SurfaceTypes;
+import com.yalcinkaya.ctf.util.CTFUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -76,7 +79,7 @@ public class Typhon extends Kit implements EnergyConsumer, MultiCooldown {
             if (arrow.hasMetadata("typhonData")) {
                 Surface cylinder = new SurfaceBuilder(new Area(0, 2 * Math.PI, 0, duration * 3), SurfaceTypes.CYLINDER_1).scaleX(radius).scaleZ(radius).translate(hit.getLocation().toVector()).build();
                 Illustrations.display(cylinder, 512, duration * 20, new MultiColorParticle(Color.fromRGB(54, 179, 145), 1, 0), hit.getWorld());
-                CoreUtil.broadcastMessageForAll(MessageType.BROADCAST, CTFUtil.getColoredName(shooterUser), " is manipulating gravity.");
+                CTFUtil.broadcastMessageForAll(MessageType.BROADCAST, "", CTFUtil.getColoredName(shooterUser), " is manipulating gravity.");
                 new SmartRunnable() {
                     @Override
                     public void cycle() {

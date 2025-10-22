@@ -1,5 +1,6 @@
 package com.yalcinkaya.ctf.stages;
 
+import com.yalcinkaya.core.util.MathUtil;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.flag.CaptureStatus;
 import com.yalcinkaya.ctf.flag.Flag;
@@ -8,10 +9,9 @@ import com.yalcinkaya.ctf.listener.CaptureStageListener;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
-import com.yalcinkaya.util.MathUtil;
 import fr.mrmicky.fastboard.FastBoard;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -63,7 +63,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             List<Flag> redFlags = ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).toList();
 
             FastBoard board = ctfUser.getScoreboard();
-            board.updateTitle(ChatColor.BOLD + "" + ChatColor.GOLD + "ProjectM");
+            board.updateTitle(ChatColor.GOLD + "" + ChatColor.BOLD + "ProjectM");
 
             List<String> lines = new ArrayList<>();
             Collections.addAll(lines, "",
@@ -72,10 +72,10 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
                     ChatColor.GRAY + "Energy: " + ChatColor.GOLD + MathUtil.roundDouble(ctfUser.getEnergy()),
                     " ",
                     ChatColor.BLUE + "Blue:");
-            redFlags.forEach(flag -> lines.add(ChatColor.GRAY + CTFUtil.printFlagStatus(flag) + " " + CTFUtil.printFlagPosition(flag)));
+            redFlags.forEach(flag -> lines.add(CTFUtil.printFlagStatus(flag) + " " + CTFUtil.printFlagPosition(flag)));
             lines.add("  ");
             lines.add(ChatColor.RED + "Red:");
-            blueFlags.forEach(flag -> lines.add(ChatColor.GRAY + CTFUtil.printFlagStatus(flag) + " " + CTFUtil.printFlagPosition(flag)));
+            blueFlags.forEach(flag -> lines.add(CTFUtil.printFlagStatus(flag) + " " + CTFUtil.printFlagPosition(flag)));
 
             board.updateLines(lines);
 
@@ -94,40 +94,40 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             List<String> actionBarComponents = new ArrayList<>();
             if (kit instanceof ClickKit clickKit) {
                 for (ClickItem clickItem : clickKit.getClickItems()) {
-                    ChatColor cooldownPrefix = getCooldownPrefix(clickItem.getCooldown());
+                    String cooldownPrefix = getCooldownPrefix(clickItem.getCooldown());
                     String cooldownNotification = clickItem.getCurrentCooldown() == 0 ?
-                            (!clickItem.hasEnergy(ctfUser) ? ChatColor.RED + "Low Energy" : "Ready") : clickItem.getCurrentCooldown() + "";
-                    actionBarComponents.add(ChatColor.LIGHT_PURPLE + clickItem.getName() + ChatColor.GRAY + " (" + cooldownPrefix + cooldownNotification + ChatColor.GRAY + ")");
+                            (!clickItem.hasEnergy(ctfUser) ? "<red>Low Energy" : "Ready") : clickItem.getCurrentCooldown() + "";
+                    actionBarComponents.add("<light_purple>" + clickItem.getName() + "<gray> (" + cooldownPrefix + cooldownNotification + "<gray>)");
                 }
             }
             if (kit instanceof MultiCooldown multiCooldown) {
                 for (Cooldown cooldown : multiCooldown.getCooldowns()) {
-                    ChatColor cooldownPrefix = getCooldownPrefix(cooldown);
+                    String cooldownPrefix = getCooldownPrefix(cooldown);
                     EnergyConsumer energyConsumer = cooldown.getEnergyConsumer();
                     String cooldownNotification = cooldown.isActive() ? cooldown.getSecondsLeft() + "" :
-                            (energyConsumer != null && !energyConsumer.hasEnergy(ctfUser) ? ChatColor.RED + "Low Energy" : "Ready");
-                    actionBarComponents.add(ChatColor.LIGHT_PURPLE + cooldown.getId() + ChatColor.GRAY + " (" + cooldownPrefix + cooldownNotification + ChatColor.GRAY + ")");
+                            (energyConsumer != null && !energyConsumer.hasEnergy(ctfUser) ? "<red>Low Energy" : "Ready");
+                    actionBarComponents.add("<light_purple>" + cooldown.getId() + "<gray> (" + cooldownPrefix + cooldownNotification + "<gray>)");
                 }
             }
             if (kit instanceof MultiCounter multiCounter) {
                 for (Counter counter : multiCounter.getCounters()) {
-                    ChatColor counterPrefix = counter.getCount() == 0 ? ChatColor.RED : ChatColor.GREEN;
-                    actionBarComponents.add(counter.getColor() + counter.getName() + ChatColor.GRAY + " (" + counterPrefix + counter.getCount() + ChatColor.GRAY + ")");
+                    String counterPrefix = counter.getCount() == 0 ? "<red>" : "<green>";
+                    actionBarComponents.add(counter.getColor() + counter.getName() +  "<gray> (" + counterPrefix + counter.getCount() + "<gray>)");
                 }
             }
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(String.join(ChatColor.GRAY + " - ", actionBarComponents)));
+            Audience.audience(player).sendActionBar(MiniMessage.miniMessage().deserialize(String.join("<gray> - ", actionBarComponents)));
 
         }
     }
 
-    private ChatColor getCooldownPrefix(Cooldown cooldown) {
+    private String getCooldownPrefix(Cooldown cooldown) {
         int secondsLeft = cooldown.getSecondsLeft();
         if (secondsLeft == 0) {
-            return ChatColor.GREEN;
+            return "<green>";
         } else if (secondsLeft <= 15) {
-            return ChatColor.YELLOW;
+            return "<yellow>";
         } else {
-            return ChatColor.RED;
+            return "<red>";
         }
     }
 }

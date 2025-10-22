@@ -1,8 +1,6 @@
 package com.yalcinkaya.ctf.commands;
 
 import com.yalcinkaya.ctf.CTF;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -18,7 +16,7 @@ public class AssignMatchCommand implements CommandExecutor {
         }
 
         if (!(sender instanceof RemoteConsoleCommandSender)) {
-            sender.sendMessage(ChatColor.RED + "This command is reserved for orchestrator (RCON only).");
+            sender.sendMessage("<red>" + "This command is reserved for orchestrator (RCON only).");
             return true;
         }
 

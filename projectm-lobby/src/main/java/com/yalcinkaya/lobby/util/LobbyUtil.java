@@ -3,7 +3,6 @@ package com.yalcinkaya.lobby.util;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.hotbar.LobbyHotbarGUI;
 import com.yalcinkaya.lobby.user.LobbyUser;
-
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
