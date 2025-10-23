@@ -24,9 +24,9 @@ public enum CTFKit {
     TOUKA("Touka", Touka::new, CTFUtil.createIcon("Touka", Material.CRIMSON_ROOTS, "Click " + emph("Ascent") + " to gain levitation for 4 seconds.")),
     TYPHON("Typhon", Typhon::new, CTFUtil.createIcon("Typhon", Material.GRAY_GLAZED_TERRACOTTA, "Shoot an arrow that will create an area of levitation upon landing."));
 
-    private String name;
-    private Supplier<Kit> supplier;
-    private ItemStack icon;
+    private final String name;
+    private final Supplier<Kit> supplier;
+    private final ItemStack icon;
 
     CTFKit(String name, Supplier<Kit> supplier, ItemStack icon) {
         this.name = name;

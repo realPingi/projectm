@@ -7,7 +7,7 @@ import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
-import org.bukkit.Bukkit;
+import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.Location;
 
 import java.util.Iterator;
@@ -57,7 +57,7 @@ public class PartyQueue extends Queue<Party> {
 
     @Override
     public Location getPhysicalEntry() {
-        return new Location(Bukkit.getWorld("world"), 56.5, 85, 3.5, 90, 0);
+        return Place.QUEUE_PARTY_UNRANKED.getLocation();
     }
 
     public int getPartySize() {

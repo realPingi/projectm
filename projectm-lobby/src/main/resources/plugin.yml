@@ -14,7 +14,23 @@ commands:
     usage: /<command>
     aliases: [ r ]
   party:
-    description: Manages your party.
+    description: Manage your party.
     usage: /<command> [create|invite|join|leave]
     aliases: [ p ]
+  elo:
+    description: Look up elo stats.
+    usage: /elo
+    aliases: [ e ]
+  setelo:
+    description: Set the elo of a player for a specific queue.
+    usage: /<command> <playerName> <queueType> <newElo>
+    permission: bukkit.command.op
+  addelo:
+    description: Modify the elo of a player for a specific queue.
+    usage: /<command> <playerName> <queueType> <eloMod>
+    permission: bukkit.command.op
+  setrank:
+    description: Set the rank of a player.
+    usage: /<command> <playerName> <rank>
+    permission: bukkit.command.op
 

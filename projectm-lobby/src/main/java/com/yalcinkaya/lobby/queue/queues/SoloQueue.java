@@ -4,7 +4,7 @@ import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
-import org.bukkit.Bukkit;
+import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.Location;
 
 import java.util.*;
@@ -55,7 +55,7 @@ public class SoloQueue extends Queue<LobbyUser> {
 
     @Override
     public Location getPhysicalEntry() {
-        return new Location(Bukkit.getWorld("world"), 56.5, 85, -4.5, 90, 0);
+        return Place.QUEUE_SOLO_UNRANKED.getLocation();
     }
 
 }

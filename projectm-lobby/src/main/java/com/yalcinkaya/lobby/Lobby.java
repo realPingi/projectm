@@ -1,9 +1,8 @@
 package com.yalcinkaya.lobby;
 
-import com.yalcinkaya.lobby.commands.PartyCommand;
-import com.yalcinkaya.lobby.commands.ReconnectCommand;
-import com.yalcinkaya.lobby.commands.SpawnCommand;
+import com.yalcinkaya.lobby.commands.*;
 import com.yalcinkaya.lobby.hotbar.HotbarManager;
+import com.yalcinkaya.lobby.leaderboard.LeaderboardManager;
 import com.yalcinkaya.lobby.listener.HotbarListener;
 import com.yalcinkaya.lobby.listener.PlayerListener;
 import com.yalcinkaya.lobby.listener.QueueListener;
@@ -31,6 +30,8 @@ public class Lobby extends JavaPlugin {
     private PartyManager partyManager = new PartyManager();
     @Getter
     private final LobbyUserManager userManager = new LobbyUserManager();
+    @Getter
+    private final LeaderboardManager leaderboardManager = new LeaderboardManager();
 
     private final PlayerListener playerListener = new PlayerListener();
     private final HotbarListener hotbarListener = new HotbarListener();
@@ -56,8 +57,13 @@ public class Lobby extends JavaPlugin {
         this.getCommand("reconnect").setExecutor(new ReconnectCommand());
         this.getCommand("party").setExecutor(new PartyCommand());
         this.getCommand("spawn").setExecutor(new SpawnCommand());
+        this.getCommand("elo").setExecutor(new EloCommand());
+        this.getCommand("setelo").setExecutor(new SetEloCommand());
+        this.getCommand("addelo").setExecutor(new AddEloCommand());
+        this.getCommand("setrank").setExecutor(new SetRankCommand());
 
         queueManager.loadQueues();
+        leaderboardManager.init();
 
         World world = Bukkit.getWorld("world");
         world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);

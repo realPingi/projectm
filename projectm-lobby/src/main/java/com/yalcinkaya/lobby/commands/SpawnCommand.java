@@ -1,6 +1,6 @@
 package com.yalcinkaya.lobby.commands;
 
-import com.yalcinkaya.lobby.listener.PlayerListener;
+import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,7 +12,7 @@ public class SpawnCommand implements CommandExecutor {
         if (!(sender instanceof Player player)) {
             return true;
         }
-        player.teleport(PlayerListener.getSpawnLocation());
+        player.teleport(Place.SPAWN.getLocation());
         return true;
     }
 }

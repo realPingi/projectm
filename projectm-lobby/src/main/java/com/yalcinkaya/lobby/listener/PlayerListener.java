@@ -1,45 +1,39 @@
 package com.yalcinkaya.lobby.listener;
 
 import com.yalcinkaya.core.ProjectM;
+import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.util.LobbyUtil;
-import net.kyori.adventure.text.format.NamedTextColor;
+import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.util.Vector;
 
 public class PlayerListener implements Listener {
 
-    private final static Vector spawnVector = new Vector(-1.5,88,-0.5);
-
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        event.setJoinMessage(null);
+        event.joinMessage(null);
         Player player = event.getPlayer();
-        if (player.isOp()) {
-            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, "op", NamedTextColor.DARK_RED);
-        } else {
-            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, "default", NamedTextColor.GRAY);
-        }
-        Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> {
-            Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
-            player.teleport(getSpawnLocation());
-            LobbyUtil.giveLobbyItems(player);
-        }, 1);
+        Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
+        player.teleport(Place.SPAWN.getLocation());
+        LobbyUtil.giveLobbyItems(player);
+        Bukkit.getScheduler().runTaskAsynchronously(Lobby.getInstance(), () -> {
+            Rank rank = ProjectM.getInstance().getRedisDataService().getRank(player.getUniqueId().toString());
+            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, rank.name(), rank.getColor());
+        });
     }
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        event.setQuitMessage(null);
+        event.quitMessage(null);
         Lobby.getInstance().getQueueManager().unqueue(LobbyUtil.getUser(event.getPlayer()));
     }
 
@@ -62,7 +56,7 @@ public class PlayerListener implements Listener {
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
-                player.teleport(getSpawnLocation());
+                player.teleport(Place.SPAWN.getLocation());
             }
         }
         event.setCancelled(true);
@@ -87,11 +81,9 @@ public class PlayerListener implements Listener {
         event.setCancelled(true);
     }
 
-    public static Location getSpawnLocation() {
-        World world = Bukkit.getWorld("world");
-        Location spawnLocation = spawnVector.toLocation(world);
-        spawnLocation.setYaw(-90);
-        return spawnLocation;
+    @EventHandler
+    public void onItemSpawn(ItemSpawnEvent event) {
+        event.setCancelled(true);
     }
 
 }
