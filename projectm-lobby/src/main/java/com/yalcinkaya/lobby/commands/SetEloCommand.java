@@ -32,7 +32,7 @@ public class SetEloCommand implements CommandExecutor {
 
         String targetName = args[0];
         QueueType queueType;
-        double newElo;
+        int newElo;
 
         try {
             queueType = QueueType.valueOf(args[1].toUpperCase(Locale.ROOT));
@@ -42,7 +42,7 @@ public class SetEloCommand implements CommandExecutor {
         }
 
         try {
-            newElo = Double.parseDouble(args[2]);
+            newElo = Integer.parseInt(args[2]);
             if (newElo < 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Elo value must be positive."));

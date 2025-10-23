@@ -34,13 +34,13 @@ public class EloCommand implements CommandExecutor {
                         return;
                     }
 
-                    for (Map.Entry<QueueType, Double> entry : eloStats.entrySet()) {
+                    for (Map.Entry<QueueType, Integer> entry : eloStats.entrySet()) {
                         QueueType type = entry.getKey();
-                        double elo = entry.getValue();
+                        int elo = entry.getValue();
 
                         String queueName = type.name().toUpperCase(Locale.ROOT);
 
-                        user.sendMessage(CoreUtil.getMessage(MessageType.INFO,"<yellow>" + queueName + ": <gray>" + (int) elo));
+                        user.sendMessage(CoreUtil.getMessage(MessageType.INFO,"<yellow>" + queueName + ": <gray>" + elo));
                     }
                 }))
                 .exceptionally(ex -> {

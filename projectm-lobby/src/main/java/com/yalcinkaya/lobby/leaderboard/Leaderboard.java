@@ -20,9 +20,7 @@ public class Leaderboard {
     private Hologram hologram;
     private final QueueType queueType;
     private final Place place;
-
     private static final int MAX_RANKS = 10;
-    private static final DecimalFormat ELO_FORMAT = new DecimalFormat("#,##0.0");
 
     private String holoId() {
         return "lb_" + queueType.getRedisKey().toLowerCase(Locale.ROOT);
@@ -77,7 +75,7 @@ public class Leaderboard {
 
             String line = ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | " +
                     ChatColor.WHITE + (row.name != null ? row.name : "Unknown") + ChatColor.DARK_GRAY + " (" +
-                    ChatColor.GOLD + ELO_FORMAT.format(row.elo) + ChatColor.DARK_GRAY + ")";
+                    ChatColor.GOLD + row.elo + ChatColor.DARK_GRAY + ")";
 
             // 0 ist die Titelzeile – Rangzeilen beginnen ab Index 1
             DHAPI.setHologramLine(hologram, rank, line);

@@ -18,7 +18,7 @@ public class RedisDataService implements AutoCloseable {
     private static final int REDIS_PORT = 6379;
 
     // --- Defaults ---
-    public static final double STARTING_ELO = 1000.0;
+    public static final int STARTING_ELO = 1000;
     private static final String DEFAULT_RANK_NAME = "DEFAULT";
 
     // --- Redis Keys ---
@@ -115,7 +115,7 @@ public class RedisDataService implements AutoCloseable {
     // ---------- Public: ELO ----------
 
     /** Setzt ELO und aktualisiert Name sowie Leaderboard. */
-    public void updateElo(String uuid, String playerName, QueueType queueType, double newElo) {
+    public void updateElo(String uuid, String playerName, QueueType queueType, int newElo) {
         final String playerKey = getPlayerKey(uuid);
         final String leaderboardKey = getLeaderboardKey(queueType);
         final String eloField = getEloField(queueType);
@@ -138,7 +138,7 @@ public class RedisDataService implements AutoCloseable {
     }
 
     /** Liefert ELO; legt fehlende Defaults automatisch an. */
-    public double getElo(String uuid, QueueType queueType) {
+    public int getElo(String uuid, QueueType queueType) {
         final String playerKey = getPlayerKey(uuid);
         final String eloField = getEloField(queueType);
 
@@ -150,7 +150,7 @@ public class RedisDataService implements AutoCloseable {
                 ensureDefaultForQueue(jedis, uuid, name, queueType);
             }
             String eloStr = jedis.hget(playerKey, eloField);
-            return eloStr != null ? Double.parseDouble(eloStr) : STARTING_ELO;
+            return eloStr != null ? Integer.parseInt(eloStr) : STARTING_ELO;
         } catch (Exception e) {
             System.err.printf("[Redis] getElo failed for %s (%s): %s%n",
                     uuid, queueType.getRedisKey(), e.getMessage());
@@ -162,12 +162,12 @@ public class RedisDataService implements AutoCloseable {
      * Erhöht/Verringert ELO atomar in Hash + Leaderboard.
      * Initialisiert bei Bedarf Defaults (1000).
      */
-    public double addElo(String uuid, QueueType queueType, double delta) {
+    public int addElo(String uuid, QueueType queueType, int delta) {
         final String leaderboardKey = getLeaderboardKey(queueType);
         final String eloField = getEloField(queueType);
         final String playerKey = getPlayerKey(uuid);
 
-        double newElo = STARTING_ELO;
+        int newElo = STARTING_ELO;
 
         try (Jedis jedis = pool.getResource()) {
             // Lazy-Init
@@ -178,7 +178,7 @@ public class RedisDataService implements AutoCloseable {
 
             // Aktuellen ELO lesen
             String currentEloString = jedis.hget(playerKey, eloField);
-            double currentElo = (currentEloString != null) ? Double.parseDouble(currentEloString) : STARTING_ELO;
+            int currentElo = (currentEloString != null) ? Integer.parseInt(currentEloString) : STARTING_ELO;
             newElo = currentElo + delta;
 
             Transaction t = jedis.multi();
@@ -251,8 +251,8 @@ public class RedisDataService implements AutoCloseable {
     public static final class LeaderboardEntry {
         public final String uuid;
         public final String name;
-        public final double elo;
-        public LeaderboardEntry(String uuid, String name, double elo) {
+        public final int elo;
+        public LeaderboardEntry(String uuid, String name, int elo) {
             this.uuid = uuid; this.name = name; this.elo = elo;
         }
     }
@@ -281,7 +281,7 @@ public class RedisDataService implements AutoCloseable {
                     String uuidNoPrefix = memberKey.substring(KEY_PLAYER_HASH_PREFIX.length());
                     String name = Optional.ofNullable(nameResp.get(memberKey))
                             .map(Response::get).orElse("Unknown");
-                    out.add(new LeaderboardEntry(uuidNoPrefix, name, t.getScore()));
+                    out.add(new LeaderboardEntry(uuidNoPrefix, name, (int) t.getScore()));
                 }
             } catch (Exception e) {
                 System.err.println("[Redis] getTopRanksWithNamesAsync failed: " + e.getMessage());
@@ -301,7 +301,7 @@ public class RedisDataService implements AutoCloseable {
 
     // ---------- Async Admin Helpers ----------
 
-    public CompletableFuture<String> resolvePlayerAndAddEloAsync(String targetName, QueueType type, double amount) {
+    public CompletableFuture<String> resolvePlayerAndAddEloAsync(String targetName, QueueType type, int amount) {
         return CompletableFuture.supplyAsync(() -> {
             Player target = Bukkit.getPlayerExact(targetName);
             if (target == null) return null;
@@ -316,7 +316,7 @@ public class RedisDataService implements AutoCloseable {
         }, runnable -> Bukkit.getScheduler().runTaskAsynchronously(ProjectM.getInstance(), runnable));
     }
 
-    public CompletableFuture<String> resolvePlayerAndSetEloAsync(String targetName, QueueType type, double newElo) {
+    public CompletableFuture<String> resolvePlayerAndSetEloAsync(String targetName, QueueType type, int newElo) {
         return CompletableFuture.supplyAsync(() -> {
             Player target = Bukkit.getPlayerExact(targetName);
             if (target == null) return null;
@@ -347,9 +347,9 @@ public class RedisDataService implements AutoCloseable {
         }, runnable -> Bukkit.getScheduler().runTaskAsynchronously(ProjectM.getInstance(), runnable));
     }
 
-    public CompletableFuture<Map<QueueType, Double>> getEloStatsAsync(String uuid) {
+    public CompletableFuture<Map<QueueType, Integer>> getEloStatsAsync(String uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            Map<QueueType, Double> stats = new EnumMap<>(QueueType.class);
+            Map<QueueType, Integer> stats = new EnumMap<>(QueueType.class);
             for (QueueType type : QueueType.values()) {
                 // getElo sorgt bereits für Lazy-Init (Default 1000 in Hash + ZSET)
                 stats.put(type, getElo(uuid, type));

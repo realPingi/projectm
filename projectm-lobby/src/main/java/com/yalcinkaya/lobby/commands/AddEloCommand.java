@@ -31,7 +31,7 @@ public class AddEloCommand implements CommandExecutor {
 
         String targetName = args[0];
         QueueType queueType;
-        double amount;
+        int amount;
 
         try {
             queueType = QueueType.valueOf(args[1].toUpperCase(Locale.ROOT));
@@ -41,7 +41,7 @@ public class AddEloCommand implements CommandExecutor {
         }
 
         try {
-            amount = Double.parseDouble(args[2]);
+            amount = Integer.parseInt(args[2]);
         } catch (NumberFormatException e) {
             user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Elo modfifier must be a number."));
             return true;

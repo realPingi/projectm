@@ -15,7 +15,7 @@ public class LeaderboardManager {
 
     public void init() {
         loadLeaderboards();
-        Bukkit.getScheduler().runTaskTimer(Lobby.getInstance(), this::updateLeaderboards, 0, 20 * 60 * 5);
+        Bukkit.getScheduler().runTaskTimer(Lobby.getInstance(), this::updateLeaderboards, 0, 20 * 60);
     }
 
     public void loadLeaderboards() {
