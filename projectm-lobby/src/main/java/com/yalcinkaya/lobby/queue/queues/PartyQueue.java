@@ -61,6 +61,6 @@ public class PartyQueue extends Queue<Party> {
     }
 
     public int getPartySize() {
-        return 1;
+        return 5;
     }
 }
