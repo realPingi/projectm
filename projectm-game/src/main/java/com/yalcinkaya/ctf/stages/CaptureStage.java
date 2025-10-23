@@ -47,11 +47,11 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
     public void idle() {
         CTF ctf = CTF.getInstance();
         if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.BLUE).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            HandlerList.unregisterAll(stageListener);
             advance(new PostStage(ctf.getRed()));
+            return;
         } else if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            HandlerList.unregisterAll(stageListener);
             advance(new PostStage(ctf.getBlue()));
+            return;
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -67,7 +67,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
 
             List<String> lines = new ArrayList<>();
             Collections.addAll(lines, "",
-                    ChatColor.GRAY + "Game Time: " + ChatColor.GOLD + MathUtil.getReadableSeconds(getTimer()),
+                    ChatColor.GRAY + "Game Time: " + ChatColor.GOLD + MathUtil.getReadableSeconds(getTime()),
                     ChatColor.GRAY + "Kit: " + ChatColor.GOLD + kitName,
                     ChatColor.GRAY + "Energy: " + ChatColor.GOLD + MathUtil.roundDouble(ctfUser.getEnergy()),
                     " ",
@@ -86,7 +86,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
                 }
             }
 
-            if (getTick() % 20 == 0) {
+            if (getTimer() % 20 == 0) {
                 CTFUtil.modifyEnergy(ctfUser, 0.2);
             }
 

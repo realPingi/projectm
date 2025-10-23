@@ -13,7 +13,7 @@ public class SetTimerCommand implements CommandExecutor {
         if (time < 0) {
             throw new IllegalArgumentException();
         }
-        CTF.getInstance().getCurrentStage().setTimer(time);
+        CTF.getInstance().getCurrentStage().setTimer(time * 20);
         return true;
     }
 }

@@ -7,14 +7,14 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 @Getter
 @Setter
 public abstract class CTFStage<T extends StageListener> {
 
-    protected int taskId;
+    protected BukkitTask task;
     protected int timer;
-    protected int tick;
     protected boolean countdown;
     protected T stageListener;
 
@@ -28,23 +28,26 @@ public abstract class CTFStage<T extends StageListener> {
     public void start() {
         CTF.getInstance().setCurrentStage(this);
         CTF.getInstance().getServer().getPluginManager().registerEvents(stageListener, CTF.getInstance());
-        taskId = new BukkitRunnable() {
+        task = new BukkitRunnable() {
 
             @Override
             public void run() {
-                tick++;
-                if (tick % 20 == 0) {
-                    timer += countdown ? -1 : 1;
+                timer += countdown ? -1 : 1;
+                if (!task.isCancelled()) {
+                    idle();
                 }
-                idle();
             }
 
-        }.runTaskTimer(CTF.getInstance(), 0, 1).getTaskId();
+        }.runTaskTimer(CTF.getInstance(),0, 1);
     }
 
     public void advance(CTFStage gameStage) {
         HandlerList.unregisterAll(stageListener);
-        Bukkit.getScheduler().cancelTask(taskId);
+        Bukkit.getScheduler().cancelTask(task.getTaskId());
         gameStage.start();
+    }
+
+    public int getTime() {
+        return timer / 20;
     }
 }

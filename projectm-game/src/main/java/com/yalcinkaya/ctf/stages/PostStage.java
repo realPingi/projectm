@@ -28,7 +28,7 @@ public class PostStage extends CTFStage<PostStageListener> {
     @Override
     public void start() {
         super.start();
-        setTimer(shutdown);
+        setTimer(shutdown * 20);
         setCountdown(true);
         Bukkit.getOnlinePlayers().forEach(player -> Audience.audience(player)
                         .showTitle(Title.title(MiniMessage.miniMessage().deserialize(printWinMessage()),

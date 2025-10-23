@@ -4,6 +4,7 @@ import com.yalcinkaya.core.util.ItemBuilder;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,7 +23,7 @@ public class PreStageListener extends StageListener {
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        event.setQuitMessage(null);
+        event.quitMessage(null);
     }
 
     @EventHandler
@@ -78,7 +79,7 @@ public class PreStageListener extends StageListener {
     }
 
     @Override
-    public String getJoinMessage(CTFUser user) {
+    public Component getJoinMessage(CTFUser user) {
         return null;
     }
 

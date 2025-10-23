@@ -11,6 +11,7 @@ import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -93,7 +94,7 @@ public class CaptureStageListener extends StageListener {
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
 
-        event.setQuitMessage(null);
+        event.quitMessage(null);
 
         Player player = event.getPlayer();
         CTFUser user = CTFUtil.getUser(player.getUniqueId());
@@ -111,7 +112,7 @@ public class CaptureStageListener extends StageListener {
         }
 
         user.setEnergy(0);
-        event.setQuitMessage(CoreUtil.getMessage(MessageType.BROADCAST, "", CTFUtil.getColoredName(user), " left the match."));
+        event.quitMessage(MiniMessage.miniMessage().deserialize(CoreUtil.getMessage(MessageType.BROADCAST, "", CTFUtil.getColoredName(user), " left the match.")));
     }
 
     @EventHandler
@@ -125,12 +126,12 @@ public class CaptureStageListener extends StageListener {
 
         EntityDamageEvent entityDamageEvent = player.getLastDamageCause();
         if (entityDamageEvent == null) {
-            event.setDeathMessage(null);
+            event.deathMessage(null);
             return;
         }
 
         if (user.isSpectating()) {
-            event.setDeathMessage(null);
+            event.deathMessage(null);
             return;
         }
 
@@ -423,8 +424,8 @@ public class CaptureStageListener extends StageListener {
     }
 
     @Override
-    public String getJoinMessage(CTFUser user) {
-        return CoreUtil.getMessage(MessageType.BROADCAST, "", CTFUtil.getColoredName(user), " rejoined the match.");
+    public Component getJoinMessage(CTFUser user) {
+        return MiniMessage.miniMessage().deserialize(CoreUtil.getMessage(MessageType.BROADCAST, "", CTFUtil.getColoredName(user), " rejoined the match."));
     }
 
 }

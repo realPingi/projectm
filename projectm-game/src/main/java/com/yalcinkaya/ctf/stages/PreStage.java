@@ -31,7 +31,7 @@ public class PreStage extends CTFStage<PreStageListener> {
     @Override
     public void start() {
         super.start();
-        setTimer(windup);
+        setTimer(windup * 20);
         setCountdown(true);
 
         World world = Bukkit.getWorld(ctfWorld);
@@ -46,9 +46,9 @@ public class PreStage extends CTFStage<PreStageListener> {
     @Override
     public void idle() {
 
-        if (getTimer() <= 0) {
-            HandlerList.unregisterAll(stageListener);
+        if (getTimer() == 0) {
             advance(new CaptureStage());
+            return;
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -68,7 +68,7 @@ public class PreStage extends CTFStage<PreStageListener> {
             String kitName = user.getKit() == null ? "None" : user.getKit().getName();
 
             board.updateTitle(ChatColor.GOLD + "" + ChatColor.BOLD + "ProjectM");
-            board.updateLines(ChatColor.GRAY + "Starting in: " + ChatColor.GOLD + "" + MathUtil.getReadableSeconds(getTimer()),
+            board.updateLines(ChatColor.GRAY + "Starting in: " + ChatColor.GOLD + "" + MathUtil.getReadableSeconds(getTime()),
                     ChatColor.GRAY + "Kit: " + ChatColor.GOLD + kitName);
         }
     }
