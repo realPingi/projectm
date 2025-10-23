@@ -11,6 +11,7 @@ import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import lombok.Getter;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -159,7 +160,7 @@ public class CaptureStageListener extends StageListener {
             }
         }
 
-        event.setDeathMessage(CoreUtil.getMessage(MessageType.BROADCAST, "", userName, deathMessage));
+        event.deathMessage(MiniMessage.miniMessage().deserialize(CoreUtil.getMessage(MessageType.BROADCAST, "", userName, deathMessage)));
         user.setLastDamager(null);
 
         if (user.isCapturing()) {

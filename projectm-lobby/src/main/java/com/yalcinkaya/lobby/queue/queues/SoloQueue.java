@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SoloQueue extends Queue<LobbyUser> {
-    private static final int MIN = 5;
+    private static final int MIN = 1;
 
     @Override
     public Set<LobbyUser> findMatch() {
@@ -55,7 +55,7 @@ public class SoloQueue extends Queue<LobbyUser> {
 
     @Override
     public Location getPhysicalEntry() {
-        return new Location(Bukkit.getWorld("world"), 2.5, -2, 12.5, -180, 0);
+        return new Location(Bukkit.getWorld("world"), 56.5, 85, -4.5, 90, 0);
     }
 
 }

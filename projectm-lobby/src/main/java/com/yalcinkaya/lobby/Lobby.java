@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby;
 
 import com.yalcinkaya.lobby.commands.PartyCommand;
 import com.yalcinkaya.lobby.commands.ReconnectCommand;
+import com.yalcinkaya.lobby.commands.SpawnCommand;
 import com.yalcinkaya.lobby.hotbar.HotbarManager;
 import com.yalcinkaya.lobby.listener.HotbarListener;
 import com.yalcinkaya.lobby.listener.PlayerListener;
@@ -14,14 +15,8 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.logging.Level;
 
 public class Lobby extends JavaPlugin {
 
@@ -60,6 +55,7 @@ public class Lobby extends JavaPlugin {
 
         this.getCommand("reconnect").setExecutor(new ReconnectCommand());
         this.getCommand("party").setExecutor(new PartyCommand());
+        this.getCommand("spawn").setExecutor(new SpawnCommand());
 
         queueManager.loadQueues();
 
@@ -72,23 +68,6 @@ public class Lobby extends JavaPlugin {
     public void onDisable() {
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, PROXY_CHANNEL);
         getLogger().info("Projectm lobby plugin disabled.");
-    }
-
-
-    private void connectPlayerToMatch(Player player, String ip, int port) {
-        String serverAddress = ip + ":" + port;
-
-        try (ByteArrayOutputStream b = new ByteArrayOutputStream();
-             DataOutputStream out = new DataOutputStream(b)) {
-
-            out.writeUTF("Connect");
-            out.writeUTF(serverAddress);
-
-            player.sendPluginMessage(this, PROXY_CHANNEL, b.toByteArray());
-
-        } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Failed to send connect message to proxy for player " + player.getName(), e);
-        }
     }
 
 }

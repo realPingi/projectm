@@ -6,6 +6,7 @@ import com.yalcinkaya.lobby.util.LobbyUtil;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,8 +15,11 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.util.Vector;
 
 public class PlayerListener implements Listener {
+
+    private final static Vector spawnVector = new Vector(-1.5,88,-0.5);
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
@@ -28,7 +32,7 @@ public class PlayerListener implements Listener {
         }
         Bukkit.getScheduler().runTaskLater(Lobby.getInstance(), () -> {
             Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
-            player.teleport(new Location(player.getWorld(), 0, 0, 0));
+            player.teleport(getSpawnLocation());
             LobbyUtil.giveLobbyItems(player);
         }, 1);
     }
@@ -56,22 +60,38 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
+                player.teleport(getSpawnLocation());
+            }
+        }
         event.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        event.setCancelled(true);
+        if (!event.getPlayer().isOp()) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        event.setCancelled(true);
+        if (!event.getPlayer().isOp()) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
         event.setCancelled(true);
+    }
+
+    public static Location getSpawnLocation() {
+        World world = Bukkit.getWorld("world");
+        Location spawnLocation = spawnVector.toLocation(world);
+        spawnLocation.setYaw(-90);
+        return spawnLocation;
     }
 
 }

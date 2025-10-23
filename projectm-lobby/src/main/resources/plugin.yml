@@ -5,6 +5,10 @@ api-version: 1.21
 depend: [ DecentHolograms, projectm-core ]
 
 commands:
+  spawn:
+    description: Return to spawn.
+    usage: /<command>
+    aliases: [ s ]
   reconnect:
     description: Reconnect to a running match.
     usage: /<command>

@@ -12,7 +12,7 @@ public class LobbyHotbarGUI implements HotbarGUI {
 
     private final InteractiveItem kangaItem = new InteractiveItem(ItemBuilder.of(Material.FIREWORK_ROCKET).name("<italic:false><light_purple>Kanga<light_purple>").build(), (user, clickType) -> {
         Player player = LobbyUtil.getPlayer(user);
-        if (clickType.isRightClick()) {
+        if (clickType.isRightClick() && player.isOnGround()) {
             player.setVelocity(new Vector(0, 1, 0));
         } else if (clickType.isLeftClick()) {
             Vector boost = player.getEyeLocation().getDirection().normalize().multiply(2).setY(0.5);

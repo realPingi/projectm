@@ -57,10 +57,10 @@ public class PartyQueue extends Queue<Party> {
 
     @Override
     public Location getPhysicalEntry() {
-        return new Location(Bukkit.getWorld("world"), -1.5, -2, 12.5, -180, 0);
+        return new Location(Bukkit.getWorld("world"), 56.5, 85, 3.5, 90, 0);
     }
 
     public int getPartySize() {
-        return 5;
+        return 1;
     }
 }
