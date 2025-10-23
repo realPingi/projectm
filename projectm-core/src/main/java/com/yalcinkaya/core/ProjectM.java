@@ -28,6 +28,9 @@ public class ProjectM extends JavaPlugin {
 
     @Override
     public void onDisable() {
-
+        if (redisDataService != null) {
+            try { redisDataService.close(); } catch (Exception ignored) {}
+        }
+        instance = null;
     }
 }

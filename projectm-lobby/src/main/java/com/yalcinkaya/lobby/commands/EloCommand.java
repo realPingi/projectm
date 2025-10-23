@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.commands;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
+import com.yalcinkaya.core.redis.RedisDataService;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.user.LobbyUser;
@@ -16,8 +17,6 @@ import java.util.Locale;
 import java.util.Map;
 
 public class EloCommand implements CommandExecutor {
-    private final String HEADER = "<gold>========== <yellow>" + "ELO STATS" + "<gold> ==========";
-    private final String FOOTER = "<gold>================================";
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -26,28 +25,28 @@ public class EloCommand implements CommandExecutor {
         }
 
         LobbyUser user = LobbyUtil.getUser(player);
+        RedisDataService redisService = ProjectM.getInstance().getRedisDataService();
 
-        ProjectM.getInstance().getRedisDataService().getEloStatsAsync(player.getUniqueId().toString())
-                .thenAccept(eloStats -> {
-                    user.sendMessage(HEADER);
-
-                    if (eloStats.isEmpty()) {
-                        ;
-                    } else {
-                        for (Map.Entry<QueueType, Double> entry : eloStats.entrySet()) {
-                            QueueType type = entry.getKey();
-                            double elo = entry.getValue();
-
-                            String queueName = type.name().toUpperCase(Locale.ROOT);
-
-                            user.sendMessage("<yellow>" + queueName + ": <gray>" + (int) elo);
-                        }
+        redisService.getEloStatsAsync(player.getUniqueId().toString())
+                .thenAccept(eloStats -> Bukkit.getScheduler().runTask(ProjectM.getInstance(), () -> {
+                    if (eloStats == null || eloStats.isEmpty()) {
+                        user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "No stats found."));
+                        return;
                     }
 
-                    player.sendMessage(FOOTER);
-                })
+                    for (Map.Entry<QueueType, Double> entry : eloStats.entrySet()) {
+                        QueueType type = entry.getKey();
+                        double elo = entry.getValue();
+
+                        String queueName = type.name().toUpperCase(Locale.ROOT);
+
+                        user.sendMessage(CoreUtil.getMessage(MessageType.INFO,"<yellow>" + queueName + ": <gray>" + (int) elo));
+                    }
+                }))
                 .exceptionally(ex -> {
-                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Failed loading elo data."));
+                    Bukkit.getScheduler().runTask(ProjectM.getInstance(), () ->
+                            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Failed loading elo data."))
+                    );
                     Bukkit.getLogger().severe("Async ELO lookup failed: " + ex.getMessage());
                     return null;
                 });
