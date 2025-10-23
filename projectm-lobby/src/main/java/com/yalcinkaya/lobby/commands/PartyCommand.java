@@ -135,7 +135,7 @@ public class PartyCommand implements CommandExecutor {
         partyManager.sendInvite(user, targetUser);
         String clickablePart = "<click:run_command:/party join " + inviterName + "><green>(accept)</click>";
 
-        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "", inviterName, " has invited you to join their party. " + clickablePart));
+        targetUser.sendMessage(CoreUtil.getMessage(MessageType.INFO, "", inviterName, " has invited you to join their party. " + clickablePart));
         user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "You have invited ", targetName, " to your party."));
 
         // Benachrichtige Party-Mitglieder über die Einladung
