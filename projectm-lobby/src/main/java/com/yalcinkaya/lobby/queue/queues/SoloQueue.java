@@ -5,17 +5,20 @@ import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.Place;
+import lombok.Data;
 import org.bukkit.Location;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Data
 public class SoloQueue extends Queue<LobbyUser> {
-    private static final int MIN = 5;
+
+    private int min = 1;
 
     @Override
     public Set<LobbyUser> findMatch() {
-        int neededPlayers = 2 * MIN;
+        int neededPlayers = 2 * min;
         if (getQueued() >= neededPlayers) {
             return queue.stream().limit(neededPlayers).collect(Collectors.toSet());
         }

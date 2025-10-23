@@ -8,6 +8,7 @@ import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.queue.Queue;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.Place;
+import lombok.Data;
 import org.bukkit.Location;
 
 import java.util.Iterator;
@@ -16,7 +17,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Data
 public class PartyQueue extends Queue<Party> {
+
+    private int partySize = 5;
 
     @Override
     public Set<Party> findMatch() {
@@ -61,6 +65,6 @@ public class PartyQueue extends Queue<Party> {
     }
 
     public int getPartySize() {
-        return 5;
+        return partySize;
     }
 }

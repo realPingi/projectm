@@ -33,4 +33,12 @@ commands:
     description: Set the rank of a player.
     usage: /<command> <playerName> <rank>
     permission: bukkit.command.op
+  setsq:
+    description: Set Solo Queue team size.
+    usage: /<command> <teamSize>
+    permission: bukkit.command.op
+  setpq:
+    description: Set Party Queue team size.
+    usage: /<command> <teamSize>
+    permission: bukkit.command.op
 

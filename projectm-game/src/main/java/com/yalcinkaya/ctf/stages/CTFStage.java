@@ -17,6 +17,7 @@ public abstract class CTFStage<T extends StageListener> {
     protected int timer;
     protected boolean countdown;
     protected T stageListener;
+    protected boolean cancelled;
 
     public CTFStage(T stageListener) {
         this.stageListener = stageListener;
@@ -33,9 +34,10 @@ public abstract class CTFStage<T extends StageListener> {
             @Override
             public void run() {
                 timer += countdown ? -1 : 1;
-                if (!task.isCancelled()) {
-                    idle();
+                if (task.isCancelled() || cancelled) {
+                    return;
                 }
+                idle();
             }
 
         }.runTaskTimer(CTF.getInstance(),0, 1);
@@ -44,6 +46,7 @@ public abstract class CTFStage<T extends StageListener> {
     public void advance(CTFStage gameStage) {
         HandlerList.unregisterAll(stageListener);
         Bukkit.getScheduler().cancelTask(task.getTaskId());
+        cancelled = true;
         gameStage.start();
     }
 
