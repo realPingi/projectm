@@ -4,10 +4,7 @@ import com.google.gson.Gson;
 import com.yalcinkaya.core.ProjectM;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-import redis.clients.jedis.Transaction;
+import redis.clients.jedis.*;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.resps.Tuple;
 
@@ -251,27 +248,46 @@ public class RedisDataService implements AutoCloseable {
 
     // ---------- Public: Leaderboard / Stats ----------
 
-    public Map<String, Double> getTopRanks(QueueType queueType, int topN) {
-        final String leaderboardKey = getLeaderboardKey(queueType);
-        Map<String, Double> ranks = new LinkedHashMap<>();
-
-        try (Jedis jedis = pool.getResource()) {
-            // Absteigend (höchste ELO zuerst)
-            List<Tuple> set = jedis.zrevrangeWithScores(leaderboardKey, 0, topN - 1);
-            if (set != null) {
-                for (Tuple t : set) {
-                    String memberKey = t.getElement(); // "player:<uuid>"
-                    Double score = t.getScore();
-                    if (score != null && memberKey != null && memberKey.startsWith(KEY_PLAYER_HASH_PREFIX)) {
-                        String uuidNoPrefix = memberKey.substring(KEY_PLAYER_HASH_PREFIX.length());
-                        ranks.put(uuidNoPrefix, score);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[Redis] Failed to retrieve top ranks for " + queueType.name() + ": " + e.getMessage());
+    public static final class LeaderboardEntry {
+        public final String uuid;
+        public final String name;
+        public final double elo;
+        public LeaderboardEntry(String uuid, String name, double elo) {
+            this.uuid = uuid; this.name = name; this.elo = elo;
         }
-        return ranks;
+    }
+
+    /** Holt Top-N mit Namen asynchron und ohne Main-Thread-I/O. */
+    public CompletableFuture<List<LeaderboardEntry>> getTopRanksWithNamesAsync(QueueType queueType, int topN) {
+        return CompletableFuture.supplyAsync(() -> {
+            String leaderboardKey = getLeaderboardKey(queueType);
+            List<LeaderboardEntry> out = new ArrayList<>(topN);
+
+            try (Jedis jedis = pool.getResource()) {
+                List<Tuple> set = jedis.zrevrangeWithScores(leaderboardKey, 0, topN - 1);
+                if (set == null || set.isEmpty()) return out;
+
+                Pipeline p = jedis.pipelined();
+                Map<String, Response<String>> nameResp = new LinkedHashMap<>();
+
+                for (Tuple t : set) {
+                    String memberKey = t.getElement();         // "player:<uuid>"
+                    nameResp.put(memberKey, p.hget(memberKey, FIELD_NAME));
+                }
+                p.sync();
+
+                for (Tuple t : set) {
+                    String memberKey = t.getElement();
+                    String uuidNoPrefix = memberKey.substring(KEY_PLAYER_HASH_PREFIX.length());
+                    String name = Optional.ofNullable(nameResp.get(memberKey))
+                            .map(Response::get).orElse("Unknown");
+                    out.add(new LeaderboardEntry(uuidNoPrefix, name, t.getScore()));
+                }
+            } catch (Exception e) {
+                System.err.println("[Redis] getTopRanksWithNamesAsync failed: " + e.getMessage());
+            }
+            return out;
+        }, runnable -> Bukkit.getScheduler().runTaskAsynchronously(ProjectM.getInstance(), runnable));
     }
 
     public void incrementStat(String uuid, String field, long increment) {

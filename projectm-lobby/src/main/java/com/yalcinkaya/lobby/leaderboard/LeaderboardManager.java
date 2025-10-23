@@ -9,8 +9,8 @@ import java.util.Set;
 
 public class LeaderboardManager {
 
-    private final Leaderboard soloLeaderboard = new Leaderboard(QueueType.SOLO, Place.LEADERBOARD_SOLO.getLocation());
-    private final Leaderboard partyLeaderboard = new Leaderboard(QueueType.PARTY, Place.LEADERBOARD_PARTY.getLocation());
+    private final Leaderboard soloLeaderboard = new Leaderboard(QueueType.SOLO, Place.LEADERBOARD_SOLO);
+    private final Leaderboard partyLeaderboard = new Leaderboard(QueueType.PARTY, Place.LEADERBOARD_PARTY);
     private final Set<Leaderboard> leaderboards = Set.of(soloLeaderboard, partyLeaderboard);
 
     public void init() {

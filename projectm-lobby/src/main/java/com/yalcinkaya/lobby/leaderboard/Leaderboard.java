@@ -2,7 +2,8 @@ package com.yalcinkaya.lobby.leaderboard;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
-import com.yalcinkaya.lobby.Lobby;
+import com.yalcinkaya.core.redis.RedisDataService;
+import com.yalcinkaya.lobby.util.Place;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import org.bukkit.Bukkit;
@@ -13,65 +14,85 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class Leaderboard {
 
     private Hologram hologram;
     private final QueueType queueType;
-    private final Location location;
+    private final Place place;
 
     private static final int MAX_RANKS = 10;
     private static final DecimalFormat ELO_FORMAT = new DecimalFormat("#,##0.0");
 
-    public Leaderboard(QueueType queueType, Location location) {
+    private String holoId() {
+        return "lb_" + queueType.getRedisKey().toLowerCase(Locale.ROOT);
+    }
+
+    public Leaderboard(QueueType queueType, Place place) {
         this.queueType = queueType;
-        this.location = location;
+        this.place = place;
     }
 
     public void load() {
-        List<String> lines = new ArrayList<>();
-        lines.add(queueType.getRedisKey().toUpperCase(Locale.ROOT) + " LEADERBOARD");
+        Location location = place.getLocation();
+        Bukkit.getScheduler().runTask(ProjectM.getInstance(), () -> {
+            if (location.getWorld() == null) {
+                ProjectM.getInstance().getLogger().warning("[Leaderboard] World ist null für " + queueType);
+                return;
+            }
 
-        for (int i = 1; i <= MAX_RANKS; i++) {
-            lines.add("#" + i + ": Lade...");
-        }
+            // Stelle sicher, dass der Chunk geladen ist
+            var chunk = location.getChunk();
+            if (!chunk.isLoaded()) {
+                chunk.load(true);
+            }
 
-        hologram = DHAPI.createHologram(queueType.getRedisKey(), location, lines);
+            List<String> lines = new ArrayList<>();
+            lines.add(ChatColor.GOLD + queueType.getRedisKey().toUpperCase(Locale.ROOT) + " LEADERBOARD");
+            for (int i = 1; i <= MAX_RANKS; i++) {
+                lines.add(ChatColor.YELLOW + "#" + i + ChatColor.DARK_GRAY + " | " + ChatColor.GRAY + "Lade...");
+            }
 
-        update();
+            hologram = DHAPI.createHologram(holoId(), location, lines);
+
+            Bukkit.getScheduler().runTaskLater(ProjectM.getInstance(), this::update, 2L);
+        });
     }
 
     public void update() {
-        CompletableFuture.supplyAsync(() -> ProjectM.getInstance().getRedisDataService().getTopRanks(queueType, MAX_RANKS))
-                .thenAccept(ranks -> Bukkit.getScheduler().runTask(Lobby.getInstance(), () -> updateHologramLines(ranks)));
+        ProjectM.getInstance().getRedisDataService()
+                .getTopRanksWithNamesAsync(queueType, MAX_RANKS)
+                .thenAccept(rows -> Bukkit.getScheduler().runTask(ProjectM.getInstance(), () -> updateHologramLines(rows)));
     }
 
-    private void updateHologramLines(Map<String, Double> ranks) {
-
-        List<Map.Entry<String, Double>> sortedRanks = new ArrayList<>(ranks.entrySet());
+    private void updateHologramLines(List<RedisDataService.LeaderboardEntry> rows) {
+        if (hologram == null) {
+            ProjectM.getInstance().getLogger().warning("[Leaderboard] updateHologramLines aufgerufen, aber hologram == null");
+            return;
+        }
 
         int rank = 1;
-        for (Map.Entry<String, Double> entry : sortedRanks) {
+        for (RedisDataService.LeaderboardEntry row : rows) {
             if (rank > MAX_RANKS) break;
 
-            String uuidStr = entry.getKey();
-            double elo = entry.getValue();
-
-            String name = ProjectM.getInstance().getRedisDataService().getPlayerName(uuidStr);
-
             String line = ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | " +
-                    ChatColor.WHITE + name + ChatColor.DARK_GRAY + " (" +
-                    ChatColor.GOLD + ELO_FORMAT.format(elo) + ChatColor.DARK_GRAY + ")";
+                    ChatColor.WHITE + (row.name != null ? row.name : "Unknown") + ChatColor.DARK_GRAY + " (" +
+                    ChatColor.GOLD + ELO_FORMAT.format(row.elo) + ChatColor.DARK_GRAY + ")";
 
+            // 0 ist die Titelzeile – Rangzeilen beginnen ab Index 1
             DHAPI.setHologramLine(hologram, rank, line);
             rank++;
         }
 
+        // restliche Plätze auffüllen
         while (rank <= MAX_RANKS) {
-            DHAPI.setHologramLine(hologram, rank, ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | " + ChatColor.GRAY + "N/A");
+            DHAPI.setHologramLine(
+                    hologram,
+                    rank,
+                    ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | " + ChatColor.GRAY + "N/A"
+            );
             rank++;
         }
     }
 }
+

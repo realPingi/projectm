@@ -13,8 +13,8 @@ public enum Place {
     LEADERBOARDS(90.5, 84, -0.5, 90,0),
     QUEUE_SOLO_UNRANKED(56.5, 85, -4.5, 90, 0),
     QUEUE_PARTY_UNRANKED(56.5, 85, 3.5, 90, 0),
-    LEADERBOARD_SOLO(84.5, 84, 4.5, -90, 0),
-    LEADERBOARD_PARTY(84.5, 84, -5.5, -90, 0);
+    LEADERBOARD_SOLO(84.5, 89, 4.5, -90, 0),
+    LEADERBOARD_PARTY(84.5, 89, -5.5, -90, 0);
 
     private final double x;
     private final double y;
