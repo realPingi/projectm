@@ -29,12 +29,20 @@ public class AssignMatchCommand implements CommandExecutor {
         String queueType = args[3];
 
         try {
+
             CTF ctf = CTF.getInstance();
+
+            if (ctf.isStarted()) {
+                sender.sendMessage("[Orchestrator] Match has already started");
+                return true;
+            }
+
             ctf.setMatchId(matchId);
             ctf.setMapId(mapId);
             ctf.setTeamJson(teamsB64);
             ctf.setQueueType(QueueType.valueOf(queueType.toUpperCase(Locale.ROOT)));
             ctf.start();
+            ctf.setStarted(true);
 
             sender.sendMessage("[Orchestrator] Match " + matchId + " assigned on map " + mapId);
         } catch (Exception e) {

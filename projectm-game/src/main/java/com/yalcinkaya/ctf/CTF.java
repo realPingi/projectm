@@ -46,6 +46,8 @@ public class CTF extends JavaPlugin {
     private String teamJson;
     @Setter
     private QueueType queueType;
+    @Setter
+    private boolean started;
 
     public void onEnable() {
         LOGGER.info("projectm enabled");
