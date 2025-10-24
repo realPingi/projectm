@@ -182,9 +182,18 @@ public class RedisDataService implements AutoCloseable {
             newElo = currentElo + delta;
 
             Transaction t = jedis.multi();
-            t.zincrby(leaderboardKey, delta, playerKey);
-            t.hset(playerKey, eloField, String.valueOf(newElo));
-            t.exec();
+            Response<Double> newScore = t.zincrby(leaderboardKey, delta, playerKey);
+            Response<Long>   hsetRes  = t.hset(playerKey, eloField, String.valueOf(newElo));
+            List<Object> exec = t.exec();
+
+            // Debug/Validation
+            if (exec == null) {
+                System.err.printf("[Redis] addElo EXEC returned null for %s (%s)%n", uuid, queueType.name());
+            } else {
+                System.out.printf("[Redis] addElo OK %s (%s): newScore=%s, hsetRes=%s, newElo=%d%n",
+                        uuid, queueType.name(),
+                        newScore.get(), hsetRes.get(), newElo);
+            }
         } catch (Exception e) {
             System.err.printf("[Redis] addElo failed for %s (%s): %s%n",
                     uuid, queueType.name(), e.getMessage());

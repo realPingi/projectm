@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.net;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
+import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.lobby.Lobby;
 import okhttp3.*;
 import org.bukkit.Bukkit;
@@ -29,7 +30,7 @@ public class MatchStarter {
 
     private final String ORCHESTRATOR_URL = "http://91.98.203.124:4000";
 
-    public void startMatch(List<UUID> blueTeam, List<UUID> redTeam, String mapId) {
+    public void startMatch(List<UUID> blueTeam, List<UUID> redTeam, String mapId, QueueType queueType) {
         if (mapId == null || mapId.isEmpty()) mapId = selectRandomMap();
 
         Map<String, List<String>> teamsPayload = new HashMap<>();
@@ -42,6 +43,8 @@ public class MatchStarter {
         String teamsJson  = gson.toJson(teamsPayload);
         String teamsBase64 = Base64.getEncoder().encodeToString(teamsJson.getBytes(StandardCharsets.UTF_8));
         matchConfig.put("teamsConfigBase64", teamsBase64);
+
+        matchConfig.put("queueType", queueType.toString());
 
         String jsonConfig = gson.toJson(matchConfig);
 

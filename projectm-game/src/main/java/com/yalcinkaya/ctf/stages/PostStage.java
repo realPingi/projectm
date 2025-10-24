@@ -19,17 +19,23 @@ public class PostStage extends CTFStage<PostStageListener> {
 
     private final int shutdown = 10;
     private Team winner;
+    private Team loser;
 
-    public PostStage(Team winner) {
+    public PostStage(Team winner, Team loser) {
         super(new PostStageListener());
         this.winner = winner;
+        this.loser = loser;
     }
 
     @Override
     public void start() {
         super.start();
+
         setTimer(shutdown * 20);
         setCountdown(true);
+
+        CTFUtil.calcEloChanges(winner, loser);
+
         Bukkit.getOnlinePlayers().forEach(player -> Audience.audience(player)
                         .showTitle(Title.title(MiniMessage.miniMessage().deserialize(printWinMessage()),
                                 MiniMessage.miniMessage().deserialize(""),

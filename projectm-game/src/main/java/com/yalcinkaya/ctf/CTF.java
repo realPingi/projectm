@@ -1,5 +1,6 @@
 package com.yalcinkaya.ctf;
 
+import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.util.IntTuple;
 import com.yalcinkaya.ctf.commands.*;
 import com.yalcinkaya.ctf.listener.KitListener;
@@ -37,15 +38,14 @@ public class CTF extends JavaPlugin {
     private Map map;
     @Setter
     private CTFStage currentStage;
-    @Getter
     @Setter
     private String matchId;
-    @Getter
     @Setter
     private String mapId;
-    @Getter
     @Setter
     private String teamJson;
+    @Setter
+    private QueueType queueType;
 
     public void onEnable() {
         LOGGER.info("projectm enabled");

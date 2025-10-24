@@ -27,6 +27,10 @@ const READY_TIMEOUT_MS = 90_000;
 // RCON_READY_TIMEOUT_MS wird nicht mehr verwendet
 const TCP_TIMEOUT_MS   = 600;
 const GAME_PING_HOST   = process.env.GAME_PING_HOST || "127.0.0.1";
+const DOCKER_NETWORK = process.env.DOCKER_NETWORK || "mcnet";
+const REDIS_HOST = process.env.REDIS_HOST || "redis";
+const REDIS_PORT = process.env.REDIS_PORT || "6379";
+const REDIS_PASS = process.env.REDIS_PASS || "";
 
 /* ─── State ─── */
 // Merkt sich Teams-B64 für warm->match Assigns (da Env nachträglich fehlt)
@@ -279,11 +283,11 @@ async function waitRconReady(containerId, rconPort) {
 
 /* ─── Docker run ─── */
 function dockerRunArgs({ name, hostGamePort, hostRconPort, envs=[] }) {
-  // FIX: Entferne --rm, um konsistentes manuelles Aufräumen zu erzwingen
   return [
-    "run","-d","--pull=missing", // <-- --rm ENTFERNT
+    "run","-d","--pull=missing",
     "--label", MANAGED_LABEL,
     "--name", name,
+    "--network", DOCKER_NETWORK,                 // <<< WICHTIG
     "-p", `${hostGamePort}:25565`,
     "-p", `${hostRconPort}:${RCON_PORT}`,
     ...envs.flatMap(e=>["-e",e]),
@@ -310,7 +314,15 @@ function startNewContainer() {
         const name = `warm-${uuidv4()}`; // Alle neu gestarteten sind Warm-Container
 
         // Dummy-Environment für Warm-Pool-Modus
-        const envs=["POOL_MODE=true","MATCH_ID=dummy","MAP_ID=default","TEAMS_CONFIG_B64="];
+        const envs = [
+          "POOL_MODE=true",
+          "MATCH_ID=dummy",
+          "MAP_ID=default",
+          "TEAMS_CONFIG_B64=",
+          `REDIS_HOST=${REDIS_HOST}`,                    // <<< neu
+          `REDIS_PORT=${REDIS_PORT}`,                    // <<< neu
+          `REDIS_PASS=${REDIS_PASS}`,                    // <<< falls nötig
+        ];
 
         const child = spawn(DOCKER, dockerRunArgs({name,hostGamePort,hostRconPort,envs}), {stdio:["ignore","pipe","pipe"]});
         let out=""; let timed=false; const t=setTimeout(()=>{ timed=true; try{child.kill("SIGKILL");}catch{}; }, RUN_TIMEOUT_MS);
@@ -336,7 +348,7 @@ function startNewContainer() {
 
 
 /* ─── Warm → Match (fast) ─── */
-async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
+async function assignWarmToMatch({ mapId, teamsConfigBase64, queueType }){
   if (runningMatchesCount() >= MATCH_CAP) return null;
   const warm = listWarm(false);
 
@@ -351,7 +363,7 @@ async function assignWarmToMatch({ mapId, teamsConfigBase64 }){
   const matchId = uuidv4();
   const trySend = async () => rconSend(
     GAME_PING_HOST, details.rconPort, RCON_PASS,
-    `assignmatch ${matchId} ${mapId} ${teamsConfigBase64}`, 6000
+    `assignmatch ${matchId} ${mapId} ${teamsConfigBase64} ${queueType}`, 6000
   );
 
   // KRITISCHER FIX: Polling-Schleife für RCON-Readiness
@@ -521,9 +533,9 @@ const server = http.createServer((req,res)=>{
 
       try{
         parsed = JSON.parse(body||"{}");
-        const { mapId, teamsConfigBase64, players } = parsed;
+        const { mapId, teamsConfigBase64, queueType } = parsed;
         if(!mapId) throw new Error("mapId missing");
-        if(!teamsConfigBase64 && !players) throw new Error("teamsConfigBase64 or players missing");
+        if(!teamsConfigBase64) throw new Error("teamsConfigBase64 missing");
 
         // 🧾 Idempotency-Key (Header bevorzugt, sonst Body)
         const idempKey = (req.headers["x-idempotency-key"] ? String(req.headers["x-idempotency-key"]) :
@@ -536,7 +548,7 @@ const server = http.createServer((req,res)=>{
         // 🔒 Sofort-Lock (vor dem ersten await)
         // Setze den Lock auf 'true', damit der Spieler sofort permanent für diesen Request gesperrt ist.
         gcExpiredLocks();
-        const candidateIdsRaw = (Array.isArray(players) && players.length ? players.map(String) : extractPlayerIds(teamsConfigBase64));
+        const candidateIdsRaw = extractPlayerIds(teamsConfigBase64);
         candidateIds = Array.from(new Set(candidateIdsRaw)).filter(Boolean);
         if (candidateIds.length === 0) {
           return send(409, { ok:false, error:"no players to lock (provide 'players' or teamsConfig with player IDs)" });
@@ -566,7 +578,7 @@ const server = http.createServer((req,res)=>{
         for (;;) {
 
             // 1. VERSUCH: Warm Pool Zuweisung
-            resp = await assignWarmToMatch({ mapId, teamsConfigBase64 });
+            resp = await assignWarmToMatch({ mapId, teamsConfigBase64, queueType });
 
             // Wenn erfolgreich, breche Schleife ab
             if (resp) break;
@@ -610,7 +622,7 @@ const server = http.createServer((req,res)=>{
         // NOTE: Wir verwenden `parsed.players` und `parsed.teamsConfigBase64`, da `candidateIds` außerhalb
         // des try-Blocks deklariert ist, aber hier neu berechnet werden muss, falls der Fehler
         // im Polling-Block auftrat.
-        const candidateIdsRaw = (Array.isArray(parsed.players) && parsed.players.length ? parsed.players.map(String) : extractPlayerIds(parsed.teamsConfigBase64));
+        const candidateIdsRaw = extractPlayerIds(parsed.teamsConfigBase64);
         const finalCandidateIds = Array.from(new Set(candidateIdsRaw)).filter(Boolean);
         // LÖSCHE NUR DIE VOM FEHLGESCHLAGENEN REQUEST GESETZTEN LOCKS
         for (const pid of finalCandidateIds) playerLocks.delete(pid);

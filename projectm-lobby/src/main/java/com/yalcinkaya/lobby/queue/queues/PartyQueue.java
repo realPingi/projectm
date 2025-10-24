@@ -1,5 +1,6 @@
 package com.yalcinkaya.lobby.queue.queues;
 
+import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
@@ -37,7 +38,7 @@ public class PartyQueue extends Queue<Party> {
         List<UUID> blue = iterator.next().getMembers().stream().toList();
         List<UUID> red = iterator.next().getMembers().stream().toList();
         MatchStarter matchStarter = Lobby.getInstance().getMatchStarter();
-        matchStarter.startMatch(blue, red, matchStarter.selectRandomMap());
+        matchStarter.startMatch(blue, red, matchStarter.selectRandomMap(), QueueType.PARTY);
     }
 
     @Override

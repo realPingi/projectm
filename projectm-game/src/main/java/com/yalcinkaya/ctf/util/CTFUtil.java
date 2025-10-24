@@ -17,6 +17,8 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.yalcinkaya.core.ProjectM;
+import com.yalcinkaya.core.redis.QueueType;
+import com.yalcinkaya.core.redis.RedisDataService;
 import com.yalcinkaya.core.util.*;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.CTFKit;
@@ -463,6 +465,16 @@ public class CTFUtil {
 
     public static List<Flag> getCapturedFlags(Team team) {
         return CTF.getInstance().getMap().getFlags().stream().filter(flag -> flag.getTeam() == team.getColor()).filter(flag -> flag.getStatus() == CaptureStatus.CAPTURED).toList();
+    }
+
+    public static void calcEloChanges(Team winner, Team loser) {
+        QueueType queueType = CTF.getInstance().getQueueType();
+        Bukkit.getScheduler().runTaskAsynchronously(CTF.getInstance(), () -> {
+            RedisDataService redisDataService = ProjectM.getInstance().getRedisDataService();
+            EloCalculator eloCalculator = new EloCalculator(queueType);
+            winner.getMembers().forEach(member -> redisDataService.addElo(member.getUuid().toString(), queueType, eloCalculator.getEloWin(member, loser)));
+            loser.getMembers().forEach(member -> redisDataService.addElo(member.getUuid().toString(), queueType, eloCalculator.getEloLoss(member, winner)));
+        });
     }
 
 }

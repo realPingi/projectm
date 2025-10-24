@@ -1,5 +1,6 @@
 package com.yalcinkaya.lobby.queue.queues;
 
+import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.queue.Queue;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 @Data
 public class SoloQueue extends Queue<LobbyUser> {
 
-    private int min = 1;
+    private int min = 5;
 
     @Override
     public Set<LobbyUser> findMatch() {
@@ -43,7 +44,7 @@ public class SoloQueue extends Queue<LobbyUser> {
         }
 
         MatchStarter matchStarter = Lobby.getInstance().getMatchStarter();
-        matchStarter.startMatch(blue, red, matchStarter.selectRandomMap());
+        matchStarter.startMatch(blue, red, matchStarter.selectRandomMap(), QueueType.SOLO);
     }
 
     @Override
