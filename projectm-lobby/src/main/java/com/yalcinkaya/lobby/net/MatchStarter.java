@@ -3,7 +3,10 @@ package com.yalcinkaya.lobby.net;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.yalcinkaya.core.redis.QueueType;
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
+import com.yalcinkaya.lobby.util.LobbyUtil;
 import okhttp3.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -84,7 +87,18 @@ public class MatchStarter {
             redirectPlayers(participants, orch.gamePort);
 
         } catch (Exception e) {
-            Lobby.getInstance().getLogger().severe("Failed to start match: " + e.getMessage());
+
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            Lobby.getInstance().getLogger().severe("Failed to start match: " + msg);
+
+            boolean capReached =
+                    msg.contains("429") ||
+                            msg.contains("cap reached") ||
+                            msg.contains("no free ports");
+
+            if (capReached) {
+                participants.stream().map(LobbyUtil::getUser).filter(Objects::nonNull).forEach(user -> user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Match could not be started. Server limit might be reached.")));
+            }
         }
     }
 
