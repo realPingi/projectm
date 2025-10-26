@@ -97,7 +97,7 @@ public class MatchStarter {
                             msg.contains("no free ports");
 
             if (capReached) {
-                participants.stream().map(LobbyUtil::getUser).filter(Objects::nonNull).forEach(user -> user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Match could not be started. Server limit might be reached.")));
+                participants.stream().map(LobbyUtil::getUser).filter(Objects::nonNull).forEach(user -> user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Match could not be started: No game server available.")));
             }
         }
     }
