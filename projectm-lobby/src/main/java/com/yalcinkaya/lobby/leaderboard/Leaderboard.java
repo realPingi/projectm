@@ -3,6 +3,7 @@ package com.yalcinkaya.lobby.leaderboard;
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.redis.RedisDataService;
+import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.lobby.util.Place;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
@@ -45,7 +46,7 @@ public class Leaderboard {
             }
 
             List<String> lines = new ArrayList<>();
-            lines.add(ChatColor.GOLD + queueType.getRedisKey().toUpperCase(Locale.ROOT) + " LEADERBOARD");
+            lines.add(ChatColor.GOLD + "--- " + CoreUtil.camelizeString(queueType.getRedisKey()) + " Leaderboard ---");
             for (int i = 1; i <= MAX_RANKS; i++) {
                 lines.add(ChatColor.YELLOW + "#" + i + ChatColor.DARK_GRAY + " | " + ChatColor.GRAY + "Lade...");
             }

@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.listener;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.Rank;
+import com.yalcinkaya.core.redis.RedisDataService;
 import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.Place;
@@ -26,8 +27,10 @@ public class PlayerListener implements Listener {
         player.teleport(Place.SPAWN.getLocation());
         LobbyUtil.giveLobbyItems(player);
         Bukkit.getScheduler().runTaskAsynchronously(Lobby.getInstance(), () -> {
-            Rank rank = ProjectM.getInstance().getRedisDataService().getRank(player.getUniqueId().toString());
+            RedisDataService redisDataService = ProjectM.getInstance().getRedisDataService();
+            Rank rank = redisDataService.getRank(player.getUniqueId().toString());
             ProjectM.getInstance().getNametagManager().setPlayerNametag(player, rank.name(), rank.getColor());
+            redisDataService.bootstrapAllQueues(player.getUniqueId().toString(), player.getName());
         });
     }
 
