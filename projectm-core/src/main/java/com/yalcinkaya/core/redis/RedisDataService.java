@@ -9,7 +9,6 @@ import redis.clients.jedis.*;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.resps.Tuple;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -333,8 +332,10 @@ public class RedisDataService implements AutoCloseable {
         public final String uuid; // normalized (ohne Bindestriche)
         public final String name;
         public final int elo;
-        public LeaderboardEntry(String uuid, String name, int elo) {
-            this.uuid = uuid; this.name = name; this.elo = elo;
+        public final String rankName;
+
+        public LeaderboardEntry(String uuid, String name, int elo, String rankName) {
+            this.uuid = uuid; this.name = name; this.elo = elo; this.rankName = rankName;
         }
     }
 
@@ -350,27 +351,31 @@ public class RedisDataService implements AutoCloseable {
 
                 Pipeline p = jedis.pipelined();
                 Map<String, Response<String>> nameResp = new LinkedHashMap<>();
+                Map<String, Response<String>> rankResp = new LinkedHashMap<>(); // NEW
 
                 for (Tuple t : set) {
-                    String memberKey = t.getElement();         // "player:<normalized-uuid>"
+                    String memberKey = t.getElement(); // "player:<normalized-uuid>"
                     nameResp.put(memberKey, p.hget(memberKey, FIELD_NAME));
+                    rankResp.put(memberKey, p.hget(memberKey, FIELD_RANK_NAME)); // NEW
                 }
                 p.sync();
 
                 for (Tuple t : set) {
                     String memberKey = t.getElement();
-                    String uuidNoPrefix = memberKey.substring(KEY_PLAYER_HASH_PREFIX.length()); // normalized uuid
-                    String name = Optional.ofNullable(nameResp.get(memberKey))
-                            .map(Response::get).orElse(null);
+                    String uuidNoPrefix = memberKey.substring(KEY_PLAYER_HASH_PREFIX.length());
 
+                    String name = Optional.ofNullable(nameResp.get(memberKey)).map(Response::get).orElse(null);
                     if (name == null || name.isEmpty()) {
-                        // Versuch, über Index einen Namen zu finden
                         String dashed = uuidNoPrefix.replaceFirst(
                                 "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{12})",
                                 "$1-$2-$3-$4-$5");
                         name = getNameByUuid(dashed).orElse("Unknown");
                     }
-                    out.add(new LeaderboardEntry(uuidNoPrefix, name, (int) t.getScore()));
+
+                    String rankName = Optional.ofNullable(rankResp.get(memberKey))
+                            .map(Response::get).orElse(DEFAULT_RANK_NAME);
+
+                    out.add(new LeaderboardEntry(uuidNoPrefix, name, (int) t.getScore(), rankName));
                 }
             } catch (Exception e) {
                 System.err.println("[Redis] getTopRanksWithNamesAsync failed: " + e.getMessage());

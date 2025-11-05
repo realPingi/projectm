@@ -24,21 +24,16 @@ commands:
   setelo:
     description: Set the elo of a player for a specific queue.
     usage: /<command> <playerName> <queueType> <newElo>
-    permission: bukkit.command.op
   addelo:
     description: Modify the elo of a player for a specific queue.
     usage: /<command> <playerName> <queueType> <eloMod>
-    permission: bukkit.command.op
   setrank:
     description: Set the rank of a player.
     usage: /<command> <playerName> <rank>
-    permission: bukkit.command.op
   setsq:
     description: Set Solo Queue team size.
     usage: /<command> <teamSize>
-    permission: bukkit.command.op
   setpq:
     description: Set Party Queue team size.
     usage: /<command> <teamSize>
-    permission: bukkit.command.op
 

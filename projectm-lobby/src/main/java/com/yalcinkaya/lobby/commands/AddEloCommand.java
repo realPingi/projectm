@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.commands;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
+import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.user.LobbyUser;
@@ -18,11 +19,16 @@ public class AddEloCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!sender.isOp() && !(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             return true;
         }
 
-        LobbyUser user = LobbyUtil.getUser((Player) sender);
+        LobbyUser user = LobbyUtil.getUser(player);
+
+        if (!Rank.hasPermissions(user, Rank.MODERATOR)) {
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+            return true;
+        }
 
         if (args.length < 3) {
             user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /addelo <playerName> <queueType> <eloMod>"));

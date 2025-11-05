@@ -2,6 +2,7 @@ package com.yalcinkaya.lobby.leaderboard;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
+import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.redis.RedisDataService;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.lobby.util.Place;
@@ -14,6 +15,7 @@ import org.bukkit.Location;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class Leaderboard {
 
@@ -73,11 +75,24 @@ public class Leaderboard {
         for (RedisDataService.LeaderboardEntry row : rows) {
             if (rank > MAX_RANKS) break;
 
-            String line = ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | " +
-                    ChatColor.WHITE + (row.name != null ? row.name : "Unknown") + ChatColor.DARK_GRAY + " (" +
-                    ChatColor.GOLD + row.elo + ChatColor.DARK_GRAY + ")";
+            // Rangnamen sicher in Enum mappen
+            Rank r;
+            try {
+                r = Rank.valueOf(Optional.ofNullable(row.rankName)
+                        .orElse("default").toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                r = Rank.DEFAULT;
+            }
 
-            // 0 ist die Titelzeile – Rangzeilen beginnen ab Index 1
+            ChatColor prefix = r == Rank.DEFAULT ? ChatColor.WHITE : r.getLegacyColor();
+
+            // Beispiel: Farbe des Rangs vor den Spielernamen setzen
+            String coloredName = prefix + (row.name != null ? row.name : "Unknown") + ChatColor.RESET;
+
+            String line = ChatColor.YELLOW + "#" + rank + ChatColor.DARK_GRAY + " | "
+                    + coloredName + ChatColor.DARK_GRAY + " ("
+                    + ChatColor.GOLD + row.elo + ChatColor.DARK_GRAY + ")";
+
             DHAPI.setHologramLine(hologram, rank, line);
             rank++;
         }

@@ -19,12 +19,16 @@ public class SetRankCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!sender.isOp() && !(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             return true;
         }
 
-        Player player = (Player) sender;
         LobbyUser user = LobbyUtil.getUser(player);
+
+        if (!Rank.hasPermissions(user, Rank.ADMIN)) {
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+            return true;
+        }
 
         if (args.length < 2) {
             user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /setrank <playerName> <rank>"));

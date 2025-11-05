@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Data
 public class SoloQueue extends Queue<LobbyUser> {
 
-    private int min = 5;
+    private int min = 4;
 
     @Override
     public Set<LobbyUser> findMatch() {

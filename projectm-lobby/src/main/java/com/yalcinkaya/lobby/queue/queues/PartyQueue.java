@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Data
 public class PartyQueue extends Queue<Party> {
 
-    private int partySize = 5;
+    private int partySize = 4;
 
     @Override
     public Set<Party> findMatch() {

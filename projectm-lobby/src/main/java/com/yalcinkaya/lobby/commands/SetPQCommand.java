@@ -1,5 +1,6 @@
 package com.yalcinkaya.lobby.commands;
 
+import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.lobby.Lobby;
@@ -14,11 +15,16 @@ public class SetPQCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (!sender.isOp() && !(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             return true;
         }
 
-        LobbyUser user = LobbyUtil.getUser((Player) sender);
+        LobbyUser user = LobbyUtil.getUser(player);
+
+        if (!Rank.hasPermissions(user, Rank.ADMIN)) {
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+            return true;
+        }
 
         if (args.length < 1) {
             user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /setpq <partySize>"));
