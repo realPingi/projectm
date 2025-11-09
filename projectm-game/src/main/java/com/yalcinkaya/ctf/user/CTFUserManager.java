@@ -18,10 +18,6 @@ public class CTFUserManager {
         users.put(uuid, new CTFUser(uuid));
     }
 
-    public void removeUser(UUID uuid) {
-        users.remove(uuid);
-    }
-
     public boolean isRegistered(UUID uuid) {
         return users.containsKey(uuid);
     }

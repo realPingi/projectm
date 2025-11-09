@@ -19,7 +19,10 @@ import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.redis.RedisDataService;
-import com.yalcinkaya.core.util.*;
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.ItemBuilder;
+import com.yalcinkaya.core.util.MessageType;
+import com.yalcinkaya.core.util.PotentialObject;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.CTFKit;
 import com.yalcinkaya.ctf.CTFMap;
@@ -37,6 +40,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BlockIterator;
@@ -130,7 +134,7 @@ public class CTFUtil {
         Location redSpawn = ctf.getMap().getRedSpawn();
         Location midPoint = blueSpawn.clone().add(redSpawn.clone().subtract(blueSpawn).multiply(0.5));
         midPoint.setY(75);
-        player.teleport(midPoint);
+        teleportPlayerWithPassengers(player, midPoint);
         clearPlayer(player);
         setFly(player, true);
     }
@@ -203,7 +207,7 @@ public class CTFUtil {
         getPlayer(user).getInventory().addItem(new ItemStack(Material.GOLDEN_APPLE, 2));
         user.setFlag(flag);
         setCaptureStatus(flag, CaptureStatus.DANGER);
-        displayFlag(user);
+        getPlayer(user).setGlowing(true);
         playSoundForAll(Sound.BLOCK_PISTON_CONTRACT);
         broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " picked up a flag!");
     }
@@ -212,7 +216,7 @@ public class CTFUtil {
         Flag flag = user.getFlag();
         setCaptureStatus(flag, CaptureStatus.SAFE);
         user.setFlag(null);
-        user.getFlagDisplay().cancel();
+        getPlayer(user).setGlowing(false);
         playSoundForAll(Sound.BLOCK_FENCE_GATE_CLOSE);
         broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " lost the flag!");
     }
@@ -221,7 +225,7 @@ public class CTFUtil {
         Flag flag = user.getFlag();
         flag.setStatus(CaptureStatus.CAPTURED);
         user.setFlag(null);
-        user.getFlagDisplay().cancel();
+        getPlayer(user).setGlowing(false);
         getPlayer(user).setMaxHealth(40);
         playSoundForAll(Sound.ENTITY_ENDER_DRAGON_FLAP);
         broadcastMessageForAll(MessageType.BROADCAST, "", getColoredName(user), " successfully captured a flag!");
@@ -280,13 +284,6 @@ public class CTFUtil {
 
     public static String printFlagPosition(Flag flag) {
         return CoreUtil.camelizeString(flag.getLocation().toString());
-    }
-
-    public static void displayFlag(CTFUser user) {
-        ItemStack flagBanner = user.getTeam().getColor() == TeamColor.BLUE ? new ItemStack(Material.RED_BANNER) : new ItemStack(Material.BLUE_BANNER);
-        SmartArmorStand smartArmorStand = new SmartArmorStand(getPlayer(user), flagBanner);
-        smartArmorStand.follow();
-        user.setFlagDisplay(smartArmorStand);
     }
 
     public static ItemStack createIcon(String name, Material material) {
@@ -477,5 +474,32 @@ public class CTFUtil {
             loser.getMembers().forEach(member -> redisDataService.addElo(member.getUuid().toString(), queueType, eloCalculator.getEloLoss(member, winner)));
         });
     }
+
+    public static void teleportPlayerWithPassengers(Player player, Location target) {
+        // 1) Passengers sichern und abmounten
+        List<Entity> passengers = new ArrayList<>(player.getPassengers());
+        for (Entity p : passengers) player.removePassenger(p);
+
+        // 2) Ziel-Chunk laden (wichtig für sauberen Teleport)
+        World world = target.getWorld();
+        world.getChunkAtAsync(target).thenRun(() -> {
+            // 3) Player teleportieren (async ist robuster)
+            player.teleportAsync(target).thenRun(() -> {
+                // 4) Passengers zum Player holen + wieder aufsetzen
+                //    (Bei Cross-World müssen sie ins Ziel-World geportet werden)
+                for (Entity p : passengers) {
+                    // Wenn Welt unterschiedlich: erst den Passenger ins Ziel porten
+                    if (p.getWorld() != player.getWorld()) {
+                        p.teleportAsync(player.getLocation());
+                    } else {
+                        p.teleport(player.getLocation());
+                    }
+                    // dann wieder montieren
+                    player.addPassenger(p);
+                }
+            });
+        });
+    }
+
 
 }

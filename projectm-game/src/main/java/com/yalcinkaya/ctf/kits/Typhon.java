@@ -85,7 +85,7 @@ public class Typhon extends Kit implements EnergyConsumer, MultiCooldown {
                     public void cycle() {
                         CTFUtil.getNearbyUsers(hit.getLocation(), radius).forEach(user -> {
                             if (!isLevitating(user)) {
-                                SmoothTravel travel = new SmoothTravel(CTFUtil.getPlayer(user), hit.getLocation().add(new Vector(0, duration * 3, 0)), duration, false, false);
+                                SmoothTravel travel = new SmoothTravel(CTFUtil.getPlayer(user), hit.getLocation().add(new Vector(0, duration * 3, 0)), duration, false);
                                 travel.start();
                                 travels.add(travel);
                             }

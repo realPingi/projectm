@@ -173,7 +173,7 @@ public class CaptureStageListener extends StageListener {
                 player.spigot().respawn();
                 Map map = CTF.getInstance().getMap();
                 Location respawnLoc = user.getTeam().getColor() == TeamColor.BLUE ? map.getBlueSpawn() : map.getRedSpawn();
-                player.teleport(respawnLoc);
+                CTFUtil.teleportPlayerWithPassengers(player, respawnLoc);
             }
         }, 1L);
     }
@@ -405,7 +405,7 @@ public class CaptureStageListener extends StageListener {
         CTFUtil.clearPlayer(player);
 
         Location spawn = user.getTeam().equals(ctf.getBlue()) ? ctf.getMap().getBlueSpawn() : ctf.getMap().getRedSpawn();
-        player.teleport(spawn);
+        CTFUtil.teleportPlayerWithPassengers(player, spawn);
         user.setFrozen(true);
         CTFUtil.equipPlayer(player);
 

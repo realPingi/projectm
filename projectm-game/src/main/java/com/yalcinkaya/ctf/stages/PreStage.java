@@ -2,12 +2,12 @@ package com.yalcinkaya.ctf.stages;
 
 import com.google.gson.Gson;
 import com.yalcinkaya.core.util.MathUtil;
-import com.yalcinkaya.core.util.camera.PlayerCamera;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.listener.PreStageListener;
 import com.yalcinkaya.ctf.net.TeamConfigHolder;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
+import com.yalcinkaya.ctf.util.PlayerCamera;
 import fr.mrmicky.fastboard.FastBoard;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -125,6 +125,5 @@ public class PreStage extends CTFStage<PreStageListener> {
         CTFUtil.setTeam(user, blue);
         PlayerCamera camera = new PlayerCamera(uuid);
         CTF.getInstance().getCameras().add(camera);
-        camera.record();
     }
 }

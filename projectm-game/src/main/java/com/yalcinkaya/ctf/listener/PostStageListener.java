@@ -23,7 +23,7 @@ public class PostStageListener extends StageListener {
 
     @EventHandler
     public void onLeave(PlayerQuitEvent event) {
-        event.setQuitMessage(null);
+        event.quitMessage(null);
     }
 
     @EventHandler

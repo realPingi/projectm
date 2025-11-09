@@ -51,12 +51,14 @@ public class PlayerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
+
         if (!userManager.isRegistered(uuid)) {
             userManager.addUser(uuid);
             CTFUser user = userManager.getUser(uuid);
             user.setSpectating(true);
             CTFUtil.setupSpectator(user);
         }
+
         CTFUser user = userManager.getUser(uuid);
         user.setScoreboard(new FastBoard(player));
         Bukkit.getScheduler().runTaskLater(CTF.getInstance(), () -> CTFUtil.updateNametag(user), 2L);

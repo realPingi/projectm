@@ -1,7 +1,6 @@
 package com.yalcinkaya.ctf.user;
 
 import com.yalcinkaya.core.user.User;
-import com.yalcinkaya.core.util.SmartArmorStand;
 import com.yalcinkaya.ctf.flag.Flag;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.team.Team;
@@ -20,7 +19,6 @@ public class CTFUser extends User {
     private double energy;
     private boolean frozen;
     private Flag flag;
-    private SmartArmorStand flagDisplay;
     private boolean cancelNextFallDamage;
     private long lastHeal;
     private boolean spectating;

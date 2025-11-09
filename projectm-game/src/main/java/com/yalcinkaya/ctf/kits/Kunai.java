@@ -4,6 +4,7 @@ import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.kits.clickItems.Knife;
+import com.yalcinkaya.ctf.util.CTFUtil;
 import org.bukkit.Location;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
@@ -23,7 +24,7 @@ public class Kunai extends Kit implements ClickKit {
             Location location = arrow.getLocation().clone();
             location.setYaw(yaw);
             location.setPitch(pitch);
-            event.getPlayer().teleport(location);
+            CTFUtil.teleportPlayerWithPassengers(event.getPlayer(), location);
             arrow.remove();
         }
     }

@@ -40,7 +40,7 @@ public class Rewind extends ClickItem implements EnergyConsumer {
             return false;
         }
 
-        smoothTravel = new SmoothTravel(CTFUtil.getPlayer(activator), someTimeAgo, 1, true, false);
+        smoothTravel = new SmoothTravel(CTFUtil.getPlayer(activator), someTimeAgo, 1, true);
         smoothTravel.start();
         return true;
     }

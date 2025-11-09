@@ -3,10 +3,10 @@ package com.yalcinkaya.ctf.commands;
 import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
-import com.yalcinkaya.core.util.camera.PlayerCamera;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
+import com.yalcinkaya.ctf.util.PlayerCamera;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,6 +32,7 @@ public class DetachCommand implements CommandExecutor {
             }
 
             camera.detach(player);
+            user.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Detached."));
         }
 
         return true;
