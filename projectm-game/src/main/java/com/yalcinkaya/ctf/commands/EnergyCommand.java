@@ -1,5 +1,8 @@
 package com.yalcinkaya.ctf.commands;
 
+import com.yalcinkaya.core.redis.Rank;
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import org.bukkit.command.Command;
@@ -12,11 +15,18 @@ public class EnergyCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
+
             CTFUser user = CTFUtil.getUser(player.getUniqueId());
+
+            if (!Rank.hasPermissions(user, Rank.MODERATOR)) {
+                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+                return true;
+            }
+
             user.setEnergy(100);
         }
 
-        return false;
+        return true;
     }
 
 }

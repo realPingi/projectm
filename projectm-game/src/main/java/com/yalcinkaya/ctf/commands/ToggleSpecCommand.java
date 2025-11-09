@@ -1,5 +1,8 @@
 package com.yalcinkaya.ctf.commands;
 
+import com.yalcinkaya.core.redis.Rank;
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.listener.CaptureStageListener;
 import com.yalcinkaya.ctf.stages.CTFStage;
@@ -16,11 +19,18 @@ public class ToggleSpecCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
+
             CTFUser user = CTFUtil.getUser(player.getUniqueId());
+
+            if (!Rank.hasPermissions(user, Rank.MODERATOR)) {
+                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+                return true;
+            }
+
             CTFStage currentStage = CTF.getInstance().getCurrentStage();
 
             if (!(currentStage instanceof CaptureStage)) {
-                return false;
+                return true;
             }
 
             if (user.isSpectating()) {
@@ -35,7 +45,7 @@ public class ToggleSpecCommand implements CommandExecutor {
             return true;
         }
 
-        return false;
+        return true;
     }
 
 }

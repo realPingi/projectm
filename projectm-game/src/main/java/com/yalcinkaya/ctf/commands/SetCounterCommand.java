@@ -1,5 +1,8 @@
 package com.yalcinkaya.ctf.commands;
 
+import com.yalcinkaya.core.redis.Rank;
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.kit.Counter;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.kit.MultiCounter;
@@ -14,7 +17,14 @@ public class SetCounterCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
+
             CTFUser user = CTFUtil.getUser(player.getUniqueId());
+
+            if (!Rank.hasPermissions(user, Rank.MODERATOR)) {
+                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Insufficient permissions."));
+                return true;
+            }
+
             Kit kit = user.getKit();
             if (kit instanceof MultiCounter) {
                 String name = args[0];
@@ -26,6 +36,6 @@ public class SetCounterCommand implements CommandExecutor {
                 }
             }
         }
-        return false;
+        return true;
     }
 }

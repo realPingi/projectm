@@ -39,7 +39,7 @@ public enum CTFKit {
     }
 
     public static CTFKit getFromString(String name) {
-        return Arrays.stream(values()).filter(ctfKit -> ctfKit.name().toLowerCase().equals(name.toLowerCase())).findFirst().orElse(null);
+        return Arrays.stream(values()).filter(ctfKit -> ctfKit.name().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     public static CTFKit getFromIcon(ItemStack icon) {

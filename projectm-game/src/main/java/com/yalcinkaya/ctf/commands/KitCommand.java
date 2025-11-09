@@ -1,5 +1,7 @@
 package com.yalcinkaya.ctf.commands;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
@@ -15,15 +17,16 @@ public class KitCommand implements CommandExecutor {
         if (sender instanceof Player player) {
             CTFUser user = CTFUtil.getUser(player);
 
-            if (!player.isOp() && user.getKit() != null) {
-                return false;
+            if (user.getKit() != null) {
+                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Already selected."));
+                return true;
             }
 
             player.openInventory(CTF.getInstance().getPlayerListener().getKitInventory());
             return true;
         }
 
-        return false;
+        return true;
     }
 
 }
