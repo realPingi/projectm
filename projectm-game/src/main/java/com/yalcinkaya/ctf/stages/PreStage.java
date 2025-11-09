@@ -2,6 +2,7 @@ package com.yalcinkaya.ctf.stages;
 
 import com.google.gson.Gson;
 import com.yalcinkaya.core.util.MathUtil;
+import com.yalcinkaya.core.util.camera.PlayerCamera;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.listener.PreStageListener;
 import com.yalcinkaya.ctf.net.TeamConfigHolder;
@@ -122,5 +123,8 @@ public class PreStage extends CTFStage<PreStageListener> {
         CTF.getInstance().getPlayerListener().getUserManager().addUser(uuid);
         CTFUser user = CTFUtil.getUser(uuid);
         CTFUtil.setTeam(user, blue);
+        PlayerCamera camera = new PlayerCamera(uuid);
+        CTF.getInstance().getCameras().add(camera);
+        camera.record();
     }
 }

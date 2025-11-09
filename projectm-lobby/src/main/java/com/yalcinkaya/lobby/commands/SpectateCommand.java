@@ -33,7 +33,7 @@ public class SpectateCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /spectate <game>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Usage: /spectate <game>"));
             return true;
         }
 
@@ -50,7 +50,7 @@ public class SpectateCommand implements CommandExecutor {
             }
 
             if (matches.isEmpty()) {
-                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"No running matches."));
+                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "No running matches."));
                 return true;
             }
 

@@ -31,7 +31,7 @@ public class AddEloCommand implements CommandExecutor {
         }
 
         if (args.length < 3) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /addelo <playerName> <queueType> <eloMod>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Usage: /addelo <playerName> <queueType> <eloMod>"));
             return true;
         }
 
@@ -42,7 +42,7 @@ public class AddEloCommand implements CommandExecutor {
         try {
             queueType = QueueType.valueOf(args[1].toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Invalid queue type: " + args[1]));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Invalid queue type: " + args[1]));
             return true;
         }
 

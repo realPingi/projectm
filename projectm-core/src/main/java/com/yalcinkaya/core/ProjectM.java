@@ -10,13 +10,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class ProjectM extends JavaPlugin {
 
     @Getter
-    private RedisDataService redisDataService;
-    @Getter
-    private NametagManager nametagManager;
+    private static ProjectM instance;
     private final PluginManager pluginManager = getServer().getPluginManager();
     private final PlayerListener playerListener = new PlayerListener();
     @Getter
-    private static ProjectM instance;
+    private RedisDataService redisDataService;
+    @Getter
+    private NametagManager nametagManager;
 
     @Override
     public void onEnable() {
@@ -29,7 +29,10 @@ public class ProjectM extends JavaPlugin {
     @Override
     public void onDisable() {
         if (redisDataService != null) {
-            try { redisDataService.close(); } catch (Exception ignored) {}
+            try {
+                redisDataService.close();
+            } catch (Exception ignored) {
+            }
         }
         instance = null;
     }

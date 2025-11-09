@@ -15,27 +15,26 @@ import java.util.regex.Pattern;
 
 public class RedisDataService implements AutoCloseable {
 
+    // --- Defaults ---
+    public static final int STARTING_ELO = 1000;
     // --- Verbindungskonfiguration ---
     private static final String REDIS_HOST = "redis";
     private static final int REDIS_PORT = 6379;
-
-    // --- Defaults ---
-    public static final int STARTING_ELO = 1000;
     private static final String DEFAULT_RANK_NAME = "DEFAULT";
 
     // --- Redis Keys ---
     private static final String KEY_LEADERBOARD_ELO_BASE = "leaderboard:elo:";   // + <queueKey>
-    private static final String KEY_PLAYER_HASH_PREFIX   = "player:";            // + <normalizedUuid>
+    private static final String KEY_PLAYER_HASH_PREFIX = "player:";            // + <normalizedUuid>
 
     // NEW: Name/UUID-Indexe (für Offline-Lookups)
     private static final String KEY_IDX_NAME_TO_UUID = "player_index:name_to_uuid"; // HSET <lower_name> <uuid>
     private static final String KEY_IDX_UUID_TO_NAME = "player_index:uuid_to_name"; // HSET <uuid> <last_seen_name>
 
     // --- Hash-Felder ---
-    private static final String FIELD_ELO_BASE   = "elo:"; // + <queueKey>
-    private static final String FIELD_NAME       = "name";
-    private static final String FIELD_RANK_NAME  = "rank_name";
-    private static final String FIELD_WINS       = "wins";
+    private static final String FIELD_ELO_BASE = "elo:"; // + <queueKey>
+    private static final String FIELD_NAME = "name";
+    private static final String FIELD_RANK_NAME = "rank_name";
+    private static final String FIELD_WINS = "wins";
 
     private static final Pattern UUID_REGEX =
             Pattern.compile("^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$");
@@ -85,7 +84,9 @@ public class RedisDataService implements AutoCloseable {
 
     // ---------- Index Helpers (Name <-> UUID) ----------
 
-    /** Speichert/aktualisiert bidirektionalen Index. */
+    /**
+     * Speichert/aktualisiert bidirektionalen Index.
+     */
     private void indexPlayer(Jedis jedis, String uuid, String playerName) {
         if (uuid == null || playerName == null || playerName.isEmpty()) return;
         String u = uuid.toLowerCase(Locale.ROOT);
@@ -94,7 +95,9 @@ public class RedisDataService implements AutoCloseable {
         jedis.hset(KEY_IDX_UUID_TO_NAME, u, playerName); // letzter bekannter Name
     }
 
-    /** Versucht zuerst Redis, dann Bukkit-Offline, um aus Name -> UUID zu kommen. */
+    /**
+     * Versucht zuerst Redis, dann Bukkit-Offline, um aus Name -> UUID zu kommen.
+     */
     public Optional<String> getUuidByName(String targetName) {
         if (targetName == null || targetName.isEmpty()) return Optional.empty();
         String lower = targetName.toLowerCase(Locale.ROOT);
@@ -117,7 +120,9 @@ public class RedisDataService implements AutoCloseable {
         return Optional.empty();
     }
 
-    /** Name für UUID – zuerst Redis, dann Bukkit-Offline. */
+    /**
+     * Name für UUID – zuerst Redis, dann Bukkit-Offline.
+     */
     public Optional<String> getNameByUuid(String uuid) {
         if (uuid == null || uuid.isEmpty()) return Optional.empty();
         String u = uuid.toLowerCase(Locale.ROOT);
@@ -149,8 +154,8 @@ public class RedisDataService implements AutoCloseable {
      * und den passenden Leaderboard-Eintrag. Komplett idempotent.
      */
     private void ensureDefaultForQueue(Jedis jedis, String uuid, String playerName, QueueType queueType) {
-        final String playerKey      = getPlayerKey(uuid);
-        final String eloField       = getEloField(queueType);
+        final String playerKey = getPlayerKey(uuid);
+        final String eloField = getEloField(queueType);
         final String leaderboardKey = getLeaderboardKey(queueType);
 
         // Name nur setzen, wenn nicht vorhanden
@@ -173,7 +178,9 @@ public class RedisDataService implements AutoCloseable {
         }
     }
 
-    /** Initialisiert einen Spieler für ALLE Queues (praktisch beim ersten Join). */
+    /**
+     * Initialisiert einen Spieler für ALLE Queues (praktisch beim ersten Join).
+     */
     public void bootstrapAllQueues(String uuid, String playerName) {
         try (Jedis jedis = pool.getResource()) {
             if (playerName != null) indexPlayer(jedis, uuid, playerName); // NEW
@@ -187,7 +194,9 @@ public class RedisDataService implements AutoCloseable {
 
     // ---------- Public: ELO ----------
 
-    /** Setzt ELO und aktualisiert Name sowie Leaderboard. */
+    /**
+     * Setzt ELO und aktualisiert Name sowie Leaderboard.
+     */
     public void updateElo(String uuid, String playerName, QueueType queueType, int newElo) {
         final String playerKey = getPlayerKey(uuid);
         final String leaderboardKey = getLeaderboardKey(queueType);
@@ -211,7 +220,9 @@ public class RedisDataService implements AutoCloseable {
         }
     }
 
-    /** Liefert ELO; legt fehlende Defaults automatisch an. */
+    /**
+     * Liefert ELO; legt fehlende Defaults automatisch an.
+     */
     public int getElo(String uuid, QueueType queueType) {
         final String playerKey = getPlayerKey(uuid);
         final String eloField = getEloField(queueType);
@@ -253,7 +264,7 @@ public class RedisDataService implements AutoCloseable {
 
             Transaction t = jedis.multi();
             Response<Double> newScore = t.zincrby(leaderboardKey, delta, playerKey);
-            Response<Long>   hsetRes  = t.hset(playerKey, eloField, String.valueOf(newElo));
+            Response<Long> hsetRes = t.hset(playerKey, eloField, String.valueOf(newElo));
             List<Object> exec = t.exec();
 
             if (exec == null) {
@@ -301,7 +312,9 @@ public class RedisDataService implements AutoCloseable {
         }
     }
 
-    /** Setzt/aktualisiert den (zuletzt bekannten) Spieler-Namen im Hash + Index. */
+    /**
+     * Setzt/aktualisiert den (zuletzt bekannten) Spieler-Namen im Hash + Index.
+     */
     public void updatePlayerName(String uuid, String playerName) {
         if (playerName == null) return;
         final String playerKey = getPlayerKey(uuid);
@@ -313,7 +326,9 @@ public class RedisDataService implements AutoCloseable {
         }
     }
 
-    /** Kann null zurückgeben, wenn kein Name im Hash liegt. */
+    /**
+     * Kann null zurückgeben, wenn kein Name im Hash liegt.
+     */
     public String getPlayerName(String uuid) {
         final String playerKey = getPlayerKey(uuid);
         try (Jedis jedis = pool.getResource()) {
@@ -328,18 +343,9 @@ public class RedisDataService implements AutoCloseable {
 
     // ---------- Public: Leaderboard / Stats ----------
 
-    public static final class LeaderboardEntry {
-        public final String uuid; // normalized (ohne Bindestriche)
-        public final String name;
-        public final int elo;
-        public final String rankName;
-
-        public LeaderboardEntry(String uuid, String name, int elo, String rankName) {
-            this.uuid = uuid; this.name = name; this.elo = elo; this.rankName = rankName;
-        }
-    }
-
-    /** Holt Top-N mit Namen asynchron und ohne Main-Thread-I/O. */
+    /**
+     * Holt Top-N mit Namen asynchron und ohne Main-Thread-I/O.
+     */
     public CompletableFuture<List<LeaderboardEntry>> getTopRanksWithNamesAsync(QueueType queueType, int topN) {
         return CompletableFuture.supplyAsync(() -> {
             String leaderboardKey = getLeaderboardKey(queueType);
@@ -393,8 +399,6 @@ public class RedisDataService implements AutoCloseable {
         }
     }
 
-    // ---------- Async Admin Helpers (OFFLINE-FÄHIG) ----------
-
     /**
      * Löst einen beliebigen Target-String in (uuid, name) auf.
      * - UUID (mit/ohne Bindestriche) wird direkt akzeptiert
@@ -415,7 +419,9 @@ public class RedisDataService implements AutoCloseable {
         if (p != null) {
             String u = p.getUniqueId().toString();
             String n = p.getName();
-            try (Jedis jedis = pool.getResource()) { indexPlayer(jedis, u, n); }
+            try (Jedis jedis = pool.getResource()) {
+                indexPlayer(jedis, u, n);
+            }
             return Optional.of(new AbstractMap.SimpleEntry<>(u, n));
         }
 
@@ -432,20 +438,26 @@ public class RedisDataService implements AutoCloseable {
         if (op != null && (op.isOnline() || op.hasPlayedBefore())) {
             String u = op.getUniqueId().toString();
             String n = Optional.ofNullable(op.getName()).orElse(target);
-            try (Jedis jedis = pool.getResource()) { indexPlayer(jedis, u, n); }
+            try (Jedis jedis = pool.getResource()) {
+                indexPlayer(jedis, u, n);
+            }
             return Optional.of(new AbstractMap.SimpleEntry<>(u, n));
         }
 
         return Optional.empty();
     }
 
-    /** Fügt Bindestriche in eine 32er-UUID ein. */
+    // ---------- Async Admin Helpers (OFFLINE-FÄHIG) ----------
+
+    /**
+     * Fügt Bindestriche in eine 32er-UUID ein.
+     */
     private String insertUuidDashes(String normalized) {
         if (normalized == null || normalized.length() != 32) return normalized;
-        return normalized.substring(0,8) + "-" +
-                normalized.substring(8,12) + "-" +
-                normalized.substring(12,16) + "-" +
-                normalized.substring(16,20) + "-" +
+        return normalized.substring(0, 8) + "-" +
+                normalized.substring(8, 12) + "-" +
+                normalized.substring(12, 16) + "-" +
+                normalized.substring(16, 20) + "-" +
                 normalized.substring(20);
     }
 
@@ -510,12 +522,26 @@ public class RedisDataService implements AutoCloseable {
         }, runnable -> Bukkit.getScheduler().runTaskAsynchronously(ProjectM.getInstance(), runnable));
     }
 
-    // ---------- Lifecycle ----------
-
     @Override
     public void close() {
         if (pool != null && !pool.isClosed()) {
             pool.close();
+        }
+    }
+
+    // ---------- Lifecycle ----------
+
+    public static final class LeaderboardEntry {
+        public final String uuid; // normalized (ohne Bindestriche)
+        public final String name;
+        public final int elo;
+        public final String rankName;
+
+        public LeaderboardEntry(String uuid, String name, int elo, String rankName) {
+            this.uuid = uuid;
+            this.name = name;
+            this.elo = elo;
+            this.rankName = rankName;
         }
     }
 }

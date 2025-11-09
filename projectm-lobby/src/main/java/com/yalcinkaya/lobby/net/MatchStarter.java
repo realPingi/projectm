@@ -33,17 +33,21 @@ public class MatchStarter {
 
     private final String ORCHESTRATOR_URL = "http://91.98.203.124:4000";
 
+    private static String orNull(String s) {
+        return s == null ? "-" : s;
+    }
+
     public void startMatch(List<UUID> blueTeam, List<UUID> redTeam, String mapId, QueueType queueType) {
         if (mapId == null || mapId.isEmpty()) mapId = selectRandomMap();
 
         Map<String, List<String>> teamsPayload = new HashMap<>();
         teamsPayload.put("BLUE", blueTeam.stream().map(UUID::toString).collect(Collectors.toList()));
-        teamsPayload.put("RED",  redTeam.stream().map(UUID::toString).collect(Collectors.toList()));
+        teamsPayload.put("RED", redTeam.stream().map(UUID::toString).collect(Collectors.toList()));
 
         Map<String, Object> matchConfig = new HashMap<>();
         matchConfig.put("mapId", mapId);
 
-        String teamsJson  = gson.toJson(teamsPayload);
+        String teamsJson = gson.toJson(teamsPayload);
         String teamsBase64 = Base64.getEncoder().encodeToString(teamsJson.getBytes(StandardCharsets.UTF_8));
         matchConfig.put("teamsConfigBase64", teamsBase64);
 
@@ -75,7 +79,7 @@ public class MatchStarter {
 
             OrchestratorResponse orch = gson.fromJson(responseBody, OrchestratorResponse.class);
             if (orch == null) throw new IOException("Empty response from orchestrator");
-            if (!orch.ok)     throw new IOException("Orchestrator error: " + (orch.error != null ? orch.error : "unknown"));
+            if (!orch.ok) throw new IOException("Orchestrator error: " + (orch.error != null ? orch.error : "unknown"));
 
             if (orch.gamePort <= 0) throw new IOException("Missing gamePort in response");
 
@@ -102,9 +106,9 @@ public class MatchStarter {
         }
     }
 
-    private static String orNull(String s) { return s == null ? "-" : s; }
-
-    /** Leitet alle Spieler via Bungee/Velocity Plugin Messaging zum Zielserver um. */
+    /**
+     * Leitet alle Spieler via Bungee/Velocity Plugin Messaging zum Zielserver um.
+     */
     private void redirectPlayers(List<UUID> participants, int port) {
         // Dein Proxy ist so konfiguriert, dass "game-{N}" -> 127.0.0.1 : (25565 + N) zeigt.
         final int gameNumber = port - 25565;
@@ -139,10 +143,15 @@ public class MatchStarter {
         boolean ok;
         String error;
 
-        @SerializedName("matchId")   String matchId;
-        @SerializedName("name")      String name;
-        @SerializedName("gamePort")  int gamePort;
-        @SerializedName("containerId") String containerId;
-        @SerializedName("fromPool")  boolean fromPool;
+        @SerializedName("matchId")
+        String matchId;
+        @SerializedName("name")
+        String name;
+        @SerializedName("gamePort")
+        int gamePort;
+        @SerializedName("containerId")
+        String containerId;
+        @SerializedName("fromPool")
+        boolean fromPool;
     }
 }

@@ -111,7 +111,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             if (kit instanceof MultiCounter multiCounter) {
                 for (Counter counter : multiCounter.getCounters()) {
                     String counterPrefix = counter.getCount() == 0 ? "<red>" : "<green>";
-                    actionBarComponents.add(counter.getColor() + counter.getName() +  "<gray> (" + counterPrefix + counter.getCount() + "<gray>)");
+                    actionBarComponents.add(counter.getColor() + counter.getName() + "<gray> (" + counterPrefix + counter.getCount() + "<gray>)");
                 }
             }
             Audience.audience(player).sendActionBar(MiniMessage.miniMessage().deserialize(String.join("<gray> - ", actionBarComponents)));

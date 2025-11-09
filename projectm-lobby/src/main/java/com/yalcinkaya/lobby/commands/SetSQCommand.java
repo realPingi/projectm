@@ -27,7 +27,7 @@ public class SetSQCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /setsq <min>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Usage: /setsq <min>"));
             return true;
         }
 

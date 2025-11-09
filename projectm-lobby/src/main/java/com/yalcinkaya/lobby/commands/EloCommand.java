@@ -40,7 +40,7 @@ public class EloCommand implements CommandExecutor {
 
                         String queueName = type.name().toUpperCase(Locale.ROOT);
 
-                        user.sendMessage(CoreUtil.getMessage(MessageType.INFO,"<yellow>" + queueName + ": <gray>" + elo));
+                        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>" + queueName + ": <gray>" + elo));
                     }
                 }))
                 .exceptionally(ex -> {

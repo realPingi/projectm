@@ -19,18 +19,18 @@ import java.util.Optional;
 
 public class Leaderboard {
 
-    private Hologram hologram;
+    private static final int MAX_RANKS = 10;
     private final QueueType queueType;
     private final Place place;
-    private static final int MAX_RANKS = 10;
-
-    private String holoId() {
-        return "lb_" + queueType.getRedisKey().toLowerCase(Locale.ROOT);
-    }
+    private Hologram hologram;
 
     public Leaderboard(QueueType queueType, Place place) {
         this.queueType = queueType;
         this.place = place;
+    }
+
+    private String holoId() {
+        return "lb_" + queueType.getRedisKey().toLowerCase(Locale.ROOT);
     }
 
     public void load() {

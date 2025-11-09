@@ -31,7 +31,7 @@ public class SetRankCommand implements CommandExecutor {
         }
 
         if (args.length < 2) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /setrank <playerName> <rank>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Usage: /setrank <playerName> <rank>"));
             return true;
         }
 

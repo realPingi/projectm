@@ -21,6 +21,7 @@ public class EloCalculator {
     public int getEloLoss(CTFUser user, Team other) {
         return (int) Math.max(-30, Math.min(0, -15 - 0.01 * changePerRankDiff * getDiffToAverage(user, other)));
     }
+
     private double getDiffToAverage(CTFUser user, Team team) {
         RedisDataService redisDataService = ProjectM.getInstance().getRedisDataService();
         int userElo = redisDataService.getElo(user.getUuid().toString(), queueType);

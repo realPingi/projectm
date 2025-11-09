@@ -39,7 +39,7 @@ public abstract class CTFStage<T extends StageListener> {
                 idle();
             }
 
-        }.runTaskTimer(CTF.getInstance(),0, 1);
+        }.runTaskTimer(CTF.getInstance(), 0, 1);
     }
 
     public void advance(CTFStage gameStage) {

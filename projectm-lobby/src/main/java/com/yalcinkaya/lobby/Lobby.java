@@ -25,21 +25,19 @@ public class Lobby extends JavaPlugin {
     @Getter
     private final QueueManager queueManager = new QueueManager();
     @Getter
-    private HotbarManager hotbarManager = new HotbarManager();
-    @Getter
-    private PartyManager partyManager = new PartyManager();
-    @Getter
     private final LobbyUserManager userManager = new LobbyUserManager();
     @Getter
     private final LeaderboardManager leaderboardManager = new LeaderboardManager();
-
     private final PlayerListener playerListener = new PlayerListener();
     private final HotbarListener hotbarListener = new HotbarListener();
     private final QueueListener queueListener = new QueueListener();
     private final PluginManager pluginManager = getServer().getPluginManager();
-
     @Getter
     private final MatchStarter matchStarter = new MatchStarter();
+    @Getter
+    private HotbarManager hotbarManager = new HotbarManager();
+    @Getter
+    private PartyManager partyManager = new PartyManager();
 
     @Override
     public void onEnable() {

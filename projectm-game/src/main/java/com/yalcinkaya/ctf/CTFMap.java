@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 public enum CTFMap {
 
     BASIC("basic", Basic::new, CTFUtil.createIcon("Basic", Material.QUARTZ_BLOCK)),
-    DUST("dust",Dust::new, CTFUtil.createIcon("Dust", Material.END_STONE));
+    DUST("dust", Dust::new, CTFUtil.createIcon("Dust", Material.END_STONE));
 
     private String id;
     private Supplier<Map> supplier;

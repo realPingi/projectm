@@ -22,6 +22,8 @@ public abstract class StageListener implements Listener {
         if (!user.isSpectating()) {
             setupPlayer(player);
             event.joinMessage(getJoinMessage(user));
+        } else {
+            event.joinMessage(null);
         }
     }
 

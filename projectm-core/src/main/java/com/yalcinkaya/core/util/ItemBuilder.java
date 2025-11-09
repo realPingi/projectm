@@ -26,9 +26,8 @@ import java.util.stream.Collectors;
 
 public class ItemBuilder {
 
-    private static final MiniMessage MM = MiniMessage.miniMessage();
     public static final String LINEBREAK = "\n"; // or "\r\n";
-
+    private static final MiniMessage MM = MiniMessage.miniMessage();
     private final ItemStack stack;
 
     /* ------------ Konstruktoren / Fabrik ------------ */

@@ -190,6 +190,7 @@ public abstract class Queue<T extends Queueable> implements Runnable {
      */
     public abstract T queuebalize(LobbyUser user);
 
+    public abstract Location getPhysicalEntry();
 
     public class Entry {
         private Hologram hologram;
@@ -224,8 +225,6 @@ public abstract class Queue<T extends Queueable> implements Runnable {
         }
 
     }
-
-    public abstract Location getPhysicalEntry();
 
 
 }

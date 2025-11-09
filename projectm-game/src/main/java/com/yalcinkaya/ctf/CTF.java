@@ -2,6 +2,7 @@ package com.yalcinkaya.ctf;
 
 import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.util.IntTuple;
+import com.yalcinkaya.core.util.camera.PlayerCamera;
 import com.yalcinkaya.ctf.commands.*;
 import com.yalcinkaya.ctf.listener.KitListener;
 import com.yalcinkaya.ctf.listener.PlayerListener;
@@ -18,6 +19,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.logging.Logger;
 
 @Getter
@@ -29,6 +31,7 @@ public class CTF extends JavaPlugin {
     private static CTF instance;
     private final Team blue = new Team(TeamColor.BLUE);
     private final Team red = new Team(TeamColor.RED);
+    private final HashSet<PlayerCamera> cameras = new HashSet<>();
     private final HashMap<IntTuple, Integer> heightMap = new HashMap<>();
     private final PlayerListener playerListener = new PlayerListener(new CTFUserManager());
     private final KitListener kitListener = new KitListener();
@@ -66,6 +69,8 @@ public class CTF extends JavaPlugin {
         this.getCommand("togglespec").setExecutor(new ToggleSpecCommand());
         this.getCommand("setcounter").setExecutor(new SetCounterCommand());
         this.getCommand("settimer").setExecutor(new SetTimerCommand());
+        this.getCommand("attach").setExecutor(new AttachCommand());
+        this.getCommand("detach").setExecutor(new DetachCommand());
         this.getCommand("setflag").setExecutor(new SetFlagCommand());
         this.getCommand("forcewin").setExecutor(new ForceWinCommand());
         this.getCommand("assignmatch").setExecutor(new AssignMatchCommand());

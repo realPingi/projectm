@@ -53,7 +53,7 @@ public class PartyCommand implements CommandExecutor {
 
     private void sendHelp(LobbyUser user) {
         user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party create ", "", "- Creates a new party."));
-        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party invite <player> ", "","- Invites a player."));
+        user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party invite <player> ", "", "- Invites a player."));
         user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party join <player> ", "", "- Joins a party."));
         user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party leave ", "", "- Leaves your current party."));
         user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "<yellow>/party list ", "", "- Lists all party members."));
@@ -144,7 +144,7 @@ public class PartyCommand implements CommandExecutor {
                 .filter(uuid -> !uuid.equals(user.getUuid()))
                 .map(LobbyUtil::getUser)
                 .forEach(member -> {
-                    if(member != null) member.sendMessage(partyNotify);
+                    if (member != null) member.sendMessage(partyNotify);
                 });
     }
 

@@ -24,7 +24,7 @@ public class AssignMatchCommand implements CommandExecutor {
         }
 
         String matchId = args[0];
-        String mapId   = args[1];
+        String mapId = args[1];
         String teamsB64 = args[2];
         String queueType = args[3];
 

@@ -37,9 +37,9 @@ public class PostStage extends CTFStage<PostStageListener> {
         CTFUtil.calcEloChanges(winner, loser);
 
         Bukkit.getOnlinePlayers().forEach(player -> Audience.audience(player)
-                        .showTitle(Title.title(MiniMessage.miniMessage().deserialize(printWinMessage()),
-                                MiniMessage.miniMessage().deserialize(""),
-                                Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(shutdown - 2), Duration.ofSeconds(1)))));
+                .showTitle(Title.title(MiniMessage.miniMessage().deserialize(printWinMessage()),
+                        MiniMessage.miniMessage().deserialize(""),
+                        Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(shutdown - 2), Duration.ofSeconds(1)))));
 
         Bukkit.getScheduler().runTaskLater(CTF.getInstance(), () -> {
 

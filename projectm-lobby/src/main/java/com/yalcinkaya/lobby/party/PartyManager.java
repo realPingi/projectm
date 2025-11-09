@@ -13,10 +13,10 @@ import java.util.UUID;
 
 public class PartyManager {
 
+    private static final long INVITE_TIMEOUT_SECONDS = 60; // 60 Sekunden Timeout
     private final HashMap<UUID, Party> parties = new HashMap<>();
     // Map: Invited Player UUID -> PartyInvite
     private final HashMap<UUID, PartyInvite> pendingInvites = new HashMap<>();
-    private static final long INVITE_TIMEOUT_SECONDS = 60; // 60 Sekunden Timeout
 
     public void createParty(LobbyUser user) {
         Party party = new Party(user.getUuid());
@@ -79,7 +79,7 @@ public class PartyManager {
         party.getUUIDs().forEach(memberUuid -> {
             LobbyUser memberUser = LobbyUtil.getUser(memberUuid);
             if (memberUser != null) {
-                memberUser.sendMessage(CoreUtil.getMessage(MessageType.INFO,  "", LobbyUtil.getPlayer(user).getName(), " has joined the party."));
+                memberUser.sendMessage(CoreUtil.getMessage(MessageType.INFO, "", LobbyUtil.getPlayer(user).getName(), " has joined the party."));
             }
         });
 

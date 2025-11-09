@@ -43,10 +43,6 @@ public class SmartArmorStand {
         armorStand.remove();
     }
 
-    public ArmorStand getArmorStand() {
-        return armorStand;
-    }
-
     public Entity getEntity() {
         return entity;
     }

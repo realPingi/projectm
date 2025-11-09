@@ -111,5 +111,5 @@ public class CoreUtil {
     public static String camelizeString(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
     }
-    
+
 }

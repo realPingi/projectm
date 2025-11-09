@@ -2,7 +2,7 @@ name: projectm-game
 main: com.yalcinkaya.ctf.CTF
 version: 1.0
 api-version: 1.21
-depend: [projectm-core]
+depend: [ projectm-core ]
 
 commands:
   kit:
@@ -31,6 +31,12 @@ commands:
     usage: /<command>
   togglespec:
     description: Toggle spectator mode.
+    usage: /<command>
+  attach:
+    description: Attach to a player camera.
+    usage: /<command> <playerName>
+  detach:
+    description: Detach from a player camera.
     usage: /<command>
   assignmatch:
     description: Control command for Orchestrator

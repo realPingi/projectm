@@ -27,6 +27,10 @@ public class MatchLookupService {
                 .build();
     }
 
+    private static String normalizeUuid(String s) {
+        return s == null ? "" : s.replace("-", "").toLowerCase(Locale.ROOT);
+    }
+
     public boolean isPlayerWaitingForMatch(UUID playerId) {
         final String needle = playerId.toString().replace("-", "").toLowerCase(Locale.ROOT);
 
@@ -70,7 +74,11 @@ public class MatchLookupService {
         return findMatchFor(playerId).isPresent();
     }
 
-    /** Liefert das Match (inkl. Port), falls der Spieler registriert ist (aktive Matches). */
+    /* ------------- intern ------------- */
+
+    /**
+     * Liefert das Match (inkl. Port), falls der Spieler registriert ist (aktive Matches).
+     */
     public Optional<MatchInfo> findMatchFor(UUID playerId) {
         try {
             List<MatchInfo> matches = fetchMatches();
@@ -88,8 +96,6 @@ public class MatchLookupService {
         }
     }
 
-    /* ------------- intern ------------- */
-
     public List<MatchInfo> fetchMatches() throws IOException {
         Request req = new Request.Builder()
                 .url(orchestratorUrl + "/matches")
@@ -104,7 +110,9 @@ public class MatchLookupService {
         }
     }
 
-    /** /in-use liefert pending + active + vereinigt (inUse) */
+    /**
+     * /in-use liefert pending + active + vereinigt (inUse)
+     */
     private InUseResponse fetchInUse() throws IOException {
         Request req = new Request.Builder()
                 .url(orchestratorUrl + "/in-use")
@@ -117,75 +125,52 @@ public class MatchLookupService {
         }
     }
 
-    private static String normalizeUuid(String s) {
-        return s == null ? "" : s.replace("-", "").toLowerCase(Locale.ROOT);
-    }
-
     /* ------------- DTOs ------------- */
 
     public static class MatchesResponse {
-        @SerializedName("ok") public boolean ok;
-        @SerializedName("matches") public List<MatchInfo> matches;
+        @SerializedName("ok")
+        public boolean ok;
+        @SerializedName("matches")
+        public List<MatchInfo> matches;
 
         // optional vorhanden (wenn du's im Orchestrator mitsendest)
-        @SerializedName("pendingPlayers") public List<String> pendingPlayers;
+        @SerializedName("pendingPlayers")
+        public List<String> pendingPlayers;
     }
 
     public static class InUseResponse {
-        @SerializedName("ok") public boolean ok;
-        @SerializedName("inUse")   public List<String> inUse;   // union(pending, active)
-        @SerializedName("pending") public List<String> pending; // nur Locks/Queue
-        @SerializedName("active")  public List<String> active;  // aus laufenden Matches
+        @SerializedName("ok")
+        public boolean ok;
+        @SerializedName("inUse")
+        public List<String> inUse;   // union(pending, active)
+        @SerializedName("pending")
+        public List<String> pending; // nur Locks/Queue
+        @SerializedName("active")
+        public List<String> active;  // aus laufenden Matches
     }
 
     public static class MatchInfo {
-        @SerializedName("containerId") public String containerId;
-        @SerializedName("name")        public String name;
-        @SerializedName("port")        public int port;
-        @SerializedName("teamsConfigBase64") public String teamsConfigBase64;
-
+        // sehr tolerante Erkennung: 32 hex (ohne Striche) ODER 36 mit Strichen
+        private static final java.util.regex.Pattern UUID_ANY =
+                java.util.regex.Pattern.compile("\\b[0-9a-fA-F]{32}\\b|\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b");
+        @SerializedName("containerId")
+        public String containerId;
+        @SerializedName("name")
+        public String name;
+        @SerializedName("port")
+        public int port;
+        @SerializedName("teamsConfigBase64")
+        public String teamsConfigBase64;
         // Cache der normalisierten UUIDs (lowercase, ohne Striche)
         private transient Set<String> cachedPlayerIdsNorm;
-
-        /** True, wenn der Spieler in den Teams enthalten ist (robust gegen Formatunterschiede). */
-        public boolean containsPlayer(UUID playerId) {
-            if (playerId == null) return false;
-            ensureDecodedPlayers();
-            return cachedPlayerIdsNorm.contains(normalizeUuid(playerId.toString()));
-        }
-
-        /** Utility: Velocity-Servername wie in deiner Config */
-        public String toVelocityServerName() {
-            int gameNumber = port - 25565;
-            return "game-" + gameNumber;
-        }
-
-        /** einmalig: TEAMS_CONFIG_B64 → JSON → alle UUID-Strings (mit/ohne Striche) einsammeln */
-        private void ensureDecodedPlayers() {
-            if (cachedPlayerIdsNorm != null) return;
-            cachedPlayerIdsNorm = new HashSet<>();
-            if (teamsConfigBase64 == null || teamsConfigBase64.isEmpty()) return;
-
-            try {
-                byte[] raw = Base64.getDecoder().decode(teamsConfigBase64);
-                String json = new String(raw, StandardCharsets.UTF_8);
-                // Wichtig: Verwende den neuen JsonParser
-                JsonElement root = JsonParser.parseString(json);
-                collectUuidsDeep(root, cachedPlayerIdsNorm);
-            } catch (Exception ignored) {
-                // leer lassen
-            }
-        }
 
         private static String normalizeUuid(String s) {
             return s == null ? "" : s.replace("-", "").toLowerCase(Locale.ROOT);
         }
 
-        // sehr tolerante Erkennung: 32 hex (ohne Striche) ODER 36 mit Strichen
-        private static final java.util.regex.Pattern UUID_ANY =
-                java.util.regex.Pattern.compile("\\b[0-9a-fA-F]{32}\\b|\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b");
-
-        /** traversiert beliebig tief: Arrays, Objekte, Primitive; sammelt alle UUID-ähnlichen Strings */
+        /**
+         * traversiert beliebig tief: Arrays, Objekte, Primitive; sammelt alle UUID-ähnlichen Strings
+         */
         private static void collectUuidsDeep(JsonElement el, Set<String> out) {
             if (el == null || el.isJsonNull()) return;
 
@@ -220,6 +205,42 @@ public class MatchLookupService {
                 for (Map.Entry<String, JsonElement> e : o.entrySet()) {
                     collectUuidsDeep(e.getValue(), out);
                 }
+            }
+        }
+
+        /**
+         * True, wenn der Spieler in den Teams enthalten ist (robust gegen Formatunterschiede).
+         */
+        public boolean containsPlayer(UUID playerId) {
+            if (playerId == null) return false;
+            ensureDecodedPlayers();
+            return cachedPlayerIdsNorm.contains(normalizeUuid(playerId.toString()));
+        }
+
+        /**
+         * Utility: Velocity-Servername wie in deiner Config
+         */
+        public String toVelocityServerName() {
+            int gameNumber = port - 25565;
+            return "game-" + gameNumber;
+        }
+
+        /**
+         * einmalig: TEAMS_CONFIG_B64 → JSON → alle UUID-Strings (mit/ohne Striche) einsammeln
+         */
+        private void ensureDecodedPlayers() {
+            if (cachedPlayerIdsNorm != null) return;
+            cachedPlayerIdsNorm = new HashSet<>();
+            if (teamsConfigBase64 == null || teamsConfigBase64.isEmpty()) return;
+
+            try {
+                byte[] raw = Base64.getDecoder().decode(teamsConfigBase64);
+                String json = new String(raw, StandardCharsets.UTF_8);
+                // Wichtig: Verwende den neuen JsonParser
+                JsonElement root = JsonParser.parseString(json);
+                collectUuidsDeep(root, cachedPlayerIdsNorm);
+            } catch (Exception ignored) {
+                // leer lassen
             }
         }
     }

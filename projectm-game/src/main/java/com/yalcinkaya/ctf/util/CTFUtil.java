@@ -407,8 +407,9 @@ public class CTFUtil {
 
     public static void setupSpectator(CTFUser user) {
         CTFUtil.teleportPlayerMidMap(user);
-        getPlayer(user).setInvisible(true);
-        setFly(getPlayer(user), true);
+        Player player = getPlayer(user);
+        player.setInvisible(true);
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     public static Set<CTFUser> getNearbyUsers(Location location, double radius) {

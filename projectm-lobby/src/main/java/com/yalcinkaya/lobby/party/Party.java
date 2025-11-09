@@ -19,6 +19,7 @@ public class Party implements Queueable {
         id = UUID.randomUUID();
         members.addAll(Arrays.stream(players).toList());
     }
+
     public Party() {
         id = UUID.randomUUID();
     }

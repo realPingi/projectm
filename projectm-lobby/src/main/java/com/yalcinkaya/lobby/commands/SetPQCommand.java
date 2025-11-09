@@ -27,7 +27,7 @@ public class SetPQCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING,"Usage: /setpq <partySize>"));
+            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Usage: /setpq <partySize>"));
             return true;
         }
 
