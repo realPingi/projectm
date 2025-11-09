@@ -4,6 +4,7 @@ import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.redis.RedisDataService;
 import com.yalcinkaya.lobby.Lobby;
+import com.yalcinkaya.lobby.user.LobbyUserManager;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.Bukkit;
@@ -23,7 +24,10 @@ public class PlayerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         event.joinMessage(null);
         Player player = event.getPlayer();
-        Lobby.getInstance().getUserManager().addUser(player.getUniqueId());
+        LobbyUserManager userManager = Lobby.getInstance().getUserManager();
+        if (!userManager.isRegistered(player.getUniqueId())) {
+            userManager.addUser(player.getUniqueId());
+        }
         player.teleport(Place.SPAWN.getLocation());
         LobbyUtil.giveLobbyItems(player);
         Bukkit.getScheduler().runTaskAsynchronously(Lobby.getInstance(), () -> {

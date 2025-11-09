@@ -116,7 +116,7 @@ public class MatchStarter {
                 .forEach(p -> sendPlayerConnect(p, serverName));
     }
 
-    private void sendPlayerConnect(Player player, String serverName) {
+    public void sendPlayerConnect(Player player, String serverName) {
         try (ByteArrayOutputStream b = new ByteArrayOutputStream();
              DataOutputStream out = new DataOutputStream(b)) {
 

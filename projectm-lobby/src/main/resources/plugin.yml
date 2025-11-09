@@ -36,4 +36,7 @@ commands:
   setpq:
     description: Set Party Queue team size.
     usage: /<command> <teamSize>
+  spectate:
+    description: Spectate a running match.
+    usage: /<command> <game>
 

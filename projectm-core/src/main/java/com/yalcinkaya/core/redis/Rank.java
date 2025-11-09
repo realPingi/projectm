@@ -2,12 +2,9 @@ package com.yalcinkaya.core.redis;
 
 import com.yalcinkaya.core.ProjectM;
 import com.yalcinkaya.core.user.User;
-import com.yalcinkaya.core.util.CoreUtil;
-import com.yalcinkaya.core.util.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 
 @Getter

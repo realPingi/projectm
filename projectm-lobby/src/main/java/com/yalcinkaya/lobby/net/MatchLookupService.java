@@ -90,7 +90,7 @@ public class MatchLookupService {
 
     /* ------------- intern ------------- */
 
-    private List<MatchInfo> fetchMatches() throws IOException {
+    public List<MatchInfo> fetchMatches() throws IOException {
         Request req = new Request.Builder()
                 .url(orchestratorUrl + "/matches")
                 .get()
