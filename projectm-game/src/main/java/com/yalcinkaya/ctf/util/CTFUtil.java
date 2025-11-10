@@ -406,7 +406,6 @@ public class CTFUtil {
         CTFUtil.teleportPlayerMidMap(user);
         Player player = getPlayer(user);
         player.setInvisible(true);
-        player.setGameMode(GameMode.SPECTATOR);
     }
 
     public static Set<CTFUser> getNearbyUsers(Location location, double radius) {
