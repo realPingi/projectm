@@ -52,7 +52,7 @@ public class SmoothTravel implements Listener {
         }
 
         if (event.getPlayer().getUniqueId().equals(target.getUniqueId())) {
-            Vector direction = event.getTo().toVector().subtract(event.getFrom().toVector());
+            Vector direction = event.getTo().toVector().subtract(event.getFrom().toVector()).setY(0);
             traveller.setVelocity(direction);
         }
     }

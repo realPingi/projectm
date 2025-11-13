@@ -39,4 +39,7 @@ commands:
   spectate:
     description: Spectate a running match.
     usage: /<command> <game>
+  partymatch:
+    description: Start a party match.
+    usage: /<command> <leaderBlue> <leaderRed>
 

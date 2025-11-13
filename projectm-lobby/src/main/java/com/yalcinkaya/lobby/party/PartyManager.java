@@ -30,9 +30,16 @@ public class PartyManager {
     public boolean hasParty(LobbyUser user) {
         return getParty(user) != null;
     }
+    public boolean hasParty(UUID uuid) {
+        return getParty(uuid) != null;
+    }
 
     public Party getParty(LobbyUser user) {
         return parties.values().stream().filter(party -> party.getMembers().contains(user.getUuid())).findFirst().orElse(null);
+    }
+
+    public Party getParty(UUID uuid) {
+        return parties.values().stream().filter(party -> party.getMembers().contains(uuid)).findFirst().orElse(null);
     }
 
     // --- Einladungslogik ---

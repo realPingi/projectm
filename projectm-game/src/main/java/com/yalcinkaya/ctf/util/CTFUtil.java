@@ -40,7 +40,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BlockIterator;
@@ -134,7 +133,7 @@ public class CTFUtil {
         Location redSpawn = ctf.getMap().getRedSpawn();
         Location midPoint = blueSpawn.clone().add(redSpawn.clone().subtract(blueSpawn).multiply(0.5));
         midPoint.setY(75);
-        teleportPlayerWithPassengers(player, midPoint);
+        player.teleport(midPoint);
         clearPlayer(player);
         setFly(player, true);
     }
@@ -473,32 +472,5 @@ public class CTFUtil {
             loser.getMembers().forEach(member -> redisDataService.addElo(member.getUuid().toString(), queueType, eloCalculator.getEloLoss(member, winner)));
         });
     }
-
-    public static void teleportPlayerWithPassengers(Player player, Location target) {
-        // 1) Passengers sichern und abmounten
-        List<Entity> passengers = new ArrayList<>(player.getPassengers());
-        for (Entity p : passengers) player.removePassenger(p);
-
-        // 2) Ziel-Chunk laden (wichtig für sauberen Teleport)
-        World world = target.getWorld();
-        world.getChunkAtAsync(target).thenRun(() -> {
-            // 3) Player teleportieren (async ist robuster)
-            player.teleportAsync(target).thenRun(() -> {
-                // 4) Passengers zum Player holen + wieder aufsetzen
-                //    (Bei Cross-World müssen sie ins Ziel-World geportet werden)
-                for (Entity p : passengers) {
-                    // Wenn Welt unterschiedlich: erst den Passenger ins Ziel porten
-                    if (p.getWorld() != player.getWorld()) {
-                        p.teleportAsync(player.getLocation());
-                    } else {
-                        p.teleport(player.getLocation());
-                    }
-                    // dann wieder montieren
-                    player.addPassenger(p);
-                }
-            });
-        });
-    }
-
 
 }

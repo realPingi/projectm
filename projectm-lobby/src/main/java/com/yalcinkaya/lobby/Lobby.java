@@ -62,6 +62,7 @@ public class Lobby extends JavaPlugin {
         this.getCommand("setsq").setExecutor(new SetSQCommand());
         this.getCommand("setpq").setExecutor(new SetPQCommand());
         this.getCommand("spectate").setExecutor(new SpectateCommand());
+        this.getCommand("partymatch").setExecutor(new PartyMatchCommand());
 
         queueManager.loadQueues();
         leaderboardManager.init();
