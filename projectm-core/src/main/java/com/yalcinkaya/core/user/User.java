@@ -1,6 +1,6 @@
 package com.yalcinkaya.core.user;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
-@Data
+@Getter
 @NoArgsConstructor
 public class User {
 
@@ -27,7 +27,7 @@ public class User {
     }
 
     public void playSound(Sound sound) {
-        Player player = Bukkit.getPlayer(getUuid());
+        Player player = Bukkit.getPlayer(uuid);
         if (player != null && player.isOnline()) {
             player.playSound(player.getLocation(), sound, 1F, 0);
         }
@@ -39,4 +39,18 @@ public class User {
             player.getWorld().playSound(player.getLocation(), sound, 1F, 0);
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return uuid != null && uuid.equals(user.uuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return uuid != null ? uuid.hashCode() : 0;
+    }
+
 }

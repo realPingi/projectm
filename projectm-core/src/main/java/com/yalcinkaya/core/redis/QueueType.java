@@ -3,7 +3,8 @@ package com.yalcinkaya.core.redis;
 public enum QueueType {
 
     SOLO("solo"),
-    PARTY("party");
+    PARTY("party"),
+    CUSTOM("custom");
 
     private final String redisKey;
 

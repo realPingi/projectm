@@ -150,16 +150,28 @@ public class CTFUtil {
     public static void setTeam(CTFUser user, boolean blue) {
         CTF ctf = CTF.getInstance();
         if (blue) {
-            ctf.getRed().getMembers().remove(user);
-            ctf.getBlue().getMembers().add(user);
+            ctf.getRed().removeMember(user);
+            ctf.getBlue().addMember(user);
             user.setTeam(ctf.getBlue());
         } else {
-            ctf.getBlue().getMembers().remove(user);
-            ctf.getRed().getMembers().add(user);
+            ctf.getBlue().removeMember(user);
+            ctf.getRed().addMember(user);
             user.setTeam(ctf.getRed());
         }
         if (getPlayer(user) != null && getPlayer(user).isOnline()) {
             updateNametag(user);
+        }
+    }
+
+    public static void removeTeam(CTFUser user) {
+        CTF ctf = CTF.getInstance();
+        ctf.getBlue().removeMember(user);
+        ctf.getRed().removeMember(user);
+        user.setTeam(null);
+        user.setKit(null);
+        user.setEnergy(0);
+        if (user.isCapturing()) {
+            restoreFlag(user);
         }
     }
 
@@ -170,7 +182,7 @@ public class CTFUtil {
 
     public static void modifyEnergy(CTFUser user, double energy) {
 
-        if (user.isCapturing()) {
+        if (user.isCapturing() || user.isSpectating()) {
             return;
         }
 
@@ -465,6 +477,9 @@ public class CTFUtil {
 
     public static void calcEloChanges(Team winner, Team loser) {
         QueueType queueType = CTF.getInstance().getQueueType();
+
+        if (queueType == QueueType.CUSTOM) return;
+
         Bukkit.getScheduler().runTaskAsynchronously(CTF.getInstance(), () -> {
             RedisDataService redisDataService = ProjectM.getInstance().getRedisDataService();
             EloCalculator eloCalculator = new EloCalculator(queueType);

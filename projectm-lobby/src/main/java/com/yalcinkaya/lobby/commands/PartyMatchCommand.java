@@ -8,6 +8,7 @@ import com.yalcinkaya.lobby.Lobby;
 import com.yalcinkaya.lobby.net.MatchStarter;
 import com.yalcinkaya.lobby.party.Party;
 import com.yalcinkaya.lobby.party.PartyManager;
+import com.yalcinkaya.lobby.queue.QueueManager;
 import com.yalcinkaya.lobby.user.LobbyUser;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import org.bukkit.Bukkit;
@@ -58,8 +59,12 @@ public class PartyMatchCommand implements CommandExecutor {
         Party blueParty = partyManager.getParty(blueId);
         Party redParty = partyManager.getParty(redId);
 
+        QueueManager queueManager = Lobby.getInstance().getQueueManager();
+        blueParty.getMembers().forEach(uuid -> queueManager.unqueue(LobbyUtil.getUser(uuid)));
+        redParty.getMembers().forEach(uuid -> queueManager.unqueue(LobbyUtil.getUser(uuid)));
+
         MatchStarter matchStarter = Lobby.getInstance().getMatchStarter();
-        matchStarter.startMatch(blueParty.getMembers().stream().toList(), redParty.getMembers().stream().toList(), matchStarter.selectRandomMap(), QueueType.PARTY);
+        matchStarter.startMatch(blueParty.getMembers().stream().toList(), redParty.getMembers().stream().toList(), matchStarter.selectRandomMap(), QueueType.CUSTOM);
 
         Bukkit.getOnlinePlayers().forEach(p -> {
             LobbyUser u = LobbyUtil.getUser(p);
