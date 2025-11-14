@@ -5,6 +5,7 @@ import com.yalcinkaya.core.util.MathUtil;
 import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.listener.PreStageListener;
 import com.yalcinkaya.ctf.net.TeamConfigHolder;
+import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
 import com.yalcinkaya.ctf.util.PlayerCamera;
@@ -113,16 +114,16 @@ public class PreStage extends CTFStage<PreStageListener> {
      */
     private void assignPredefinedTeams(TeamConfigHolder teamData) {
 
-        teamData.getRedTeam().forEach(uuid -> assignTeam(uuid, false));
-        teamData.getBlueTeam().forEach(uuid -> assignTeam(uuid, true));
+        teamData.getRedTeam().forEach(uuid -> assignTeam(uuid, CTF.getInstance().getRed()));
+        teamData.getBlueTeam().forEach(uuid -> assignTeam(uuid, CTF.getInstance().getBlue()));
 
         getLogger().info("Teams für das Match wurden erfolgreich zugewiesen.");
     }
 
-    private void assignTeam(UUID uuid, boolean blue) {
+    private void assignTeam(UUID uuid, Team team) {
         CTF.getInstance().getPlayerListener().getUserManager().addUser(uuid);
         CTFUser user = CTFUtil.getUser(uuid);
-        CTFUtil.setTeam(user, blue);
+        CTFUtil.setTeam(user, team);
         PlayerCamera camera = new PlayerCamera(uuid);
         CTF.getInstance().getCameras().add(camera);
     }

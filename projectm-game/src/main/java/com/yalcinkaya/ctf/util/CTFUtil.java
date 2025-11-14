@@ -147,17 +147,10 @@ public class CTFUtil {
         return team.getMembers().stream().map(CTFUser::getKit).anyMatch(kit -> kit != null && CTFKit.getFromKit(kit) == ctfKit);
     }
 
-    public static void setTeam(CTFUser user, boolean blue) {
-        CTF ctf = CTF.getInstance();
-        if (blue) {
-            ctf.getRed().removeMember(user);
-            ctf.getBlue().addMember(user);
-            user.setTeam(ctf.getBlue());
-        } else {
-            ctf.getBlue().removeMember(user);
-            ctf.getRed().addMember(user);
-            user.setTeam(ctf.getRed());
-        }
+    public static void setTeam(CTFUser user, Team team) {
+        removeTeam(user);
+        team.addMember(user);
+
         if (getPlayer(user) != null && getPlayer(user).isOnline()) {
             updateNametag(user);
         }
@@ -167,7 +160,6 @@ public class CTFUtil {
         CTF ctf = CTF.getInstance();
         ctf.getBlue().removeMember(user);
         ctf.getRed().removeMember(user);
-        user.setTeam(null);
         user.setKit(null);
         user.setEnergy(0);
         if (user.isCapturing()) {

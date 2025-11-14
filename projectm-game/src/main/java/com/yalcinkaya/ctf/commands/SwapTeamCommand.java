@@ -3,6 +3,7 @@ package com.yalcinkaya.ctf.commands;
 import com.yalcinkaya.core.redis.Rank;
 import com.yalcinkaya.core.util.CoreUtil;
 import com.yalcinkaya.core.util.MessageType;
+import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
 import com.yalcinkaya.ctf.util.CTFUtil;
@@ -28,7 +29,7 @@ public class SwapTeamCommand implements CommandExecutor {
                 return true;
             }
 
-            CTFUtil.setTeam(user, user.getTeam().getColor() != TeamColor.BLUE);
+            CTFUtil.setTeam(user, user.getTeam().getColor() == TeamColor.BLUE ? CTF.getInstance().getRed() : CTF.getInstance().getBlue());
         }
 
         return true;

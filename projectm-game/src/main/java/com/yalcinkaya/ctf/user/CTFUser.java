@@ -1,20 +1,22 @@
 package com.yalcinkaya.ctf.user;
 
 import com.yalcinkaya.core.user.User;
+import com.yalcinkaya.ctf.CTF;
 import com.yalcinkaya.ctf.flag.Flag;
 import com.yalcinkaya.ctf.kit.Kit;
 import com.yalcinkaya.ctf.team.Team;
 import fr.mrmicky.fastboard.FastBoard;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
+@Getter
+@Setter
 public class CTFUser extends User {
 
-    private Team team;
     private Kit kit;
     private double energy;
     private boolean frozen;
@@ -32,6 +34,14 @@ public class CTFUser extends User {
 
     public boolean isCapturing() {
         return flag != null;
+    }
+
+    public Team getTeam() {
+        Team blue = CTF.getInstance().getBlue();
+        Team red = CTF.getInstance().getRed();
+        if (blue.isMember(this)) return blue;
+        if (red.isMember(this)) return red;
+        return null;
     }
 
 }

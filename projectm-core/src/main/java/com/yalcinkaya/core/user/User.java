@@ -1,7 +1,6 @@
 package com.yalcinkaya.core.user;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -10,10 +9,9 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 @Getter
-@NoArgsConstructor
 public class User {
 
-    private UUID uuid;
+    private final UUID uuid;
 
     public User(UUID uuid) {
         this.uuid = uuid;

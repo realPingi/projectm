@@ -53,7 +53,7 @@ public class ToggleSpecCommand implements CommandExecutor {
                 }
 
                 user.setSpectating(false);
-                CTFUtil.setTeam(user, TeamColor.valueOf(colorName) == TeamColor.BLUE);
+                CTFUtil.setTeam(user, TeamColor.valueOf(colorName) == TeamColor.BLUE ? CTF.getInstance().getBlue() : CTF.getInstance().getRed());
                 CaptureStageListener captureStageListener = ((CaptureStage) currentStage).getStageListener();
                 captureStageListener.setupPlayer(player);
             } else {
