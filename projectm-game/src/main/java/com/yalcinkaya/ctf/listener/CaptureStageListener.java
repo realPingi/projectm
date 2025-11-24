@@ -387,6 +387,14 @@ public class CaptureStageListener extends StageListener {
                             player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 1F, 0);
                         }
                         if (timer >= windup * 20) {
+
+                            if (user.getEnergy() < 100) {
+                                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Your energy resources are insufficient."));
+                                player.setLevel(0);
+                                cancel();
+                                return;
+                            }
+
                             CTFUtil.pickUpFlag(user, nearbyFlag);
                             player.setLevel(0);
                             cancel();
