@@ -73,7 +73,7 @@ public class CaptureStageListener extends StageListener {
         if (heightMap.containsKey(placedTuple)) {
             y = heightMap.get(placedTuple);
         } else {
-            y = heightMap.containsKey(againstTuple) ? heightMap.get(againstTuple) : CoreUtil.getHighestBlock(against.getX(), against.getZ(), against.getWorld()).getY() + buildLimit;
+            y = heightMap.containsKey(againstTuple) ? heightMap.get(againstTuple) : CoreUtil.getLowestLayer(against.getX(), against.getZ(), 255, against.getWorld()).getY() + buildLimit;
             heightMap.put(placedTuple, y);
         }
         placed.setType(material);

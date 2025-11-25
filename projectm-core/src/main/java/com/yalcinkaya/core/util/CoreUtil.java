@@ -1,8 +1,6 @@
 package com.yalcinkaya.core.util;
 
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.util.Vector;
 
@@ -86,9 +84,9 @@ public class CoreUtil {
         return winner;
     }
 
-    public static Block getHighestBlock(int x, int z, World world) {
+    public static Block getHighestSolidBlock(int x, int z, int maxHeight, World world) {
         Block highest = null;
-        for (int y = 255; y >= 0; y--) {
+        for (int y = maxHeight; y >= 0; y--) {
             Block block = world.getBlockAt(x, y, z);
             if (block.getType().isSolid()) {
                 highest = block;
@@ -96,6 +94,17 @@ public class CoreUtil {
             }
         }
         return highest;
+    }
+
+    public static Block getLowestLayer(int x, int z, int maxHeigth, World world) {
+        List<Block> layers = new ArrayList<>();
+        for (int y = maxHeigth; y >= 0; y--) {
+            if (world.getBlockAt(x, y, z).getType() != Material.AIR) continue;
+            Block highest = getHighestSolidBlock(x, z, y, world);
+            if (highest == null) continue;
+            layers.add(highest);
+        }
+        return layers.stream().min(Comparator.comparingInt(Block::getY)).orElse(null);
     }
 
     public static Set<PotentialObject<Color>> mixColors(Color primary, Color secondary, Color tertiary, int p1, int p2, int p3) {
