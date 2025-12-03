@@ -29,6 +29,7 @@ import com.yalcinkaya.ctf.CTFMap;
 import com.yalcinkaya.ctf.flag.CaptureStatus;
 import com.yalcinkaya.ctf.flag.Flag;
 import com.yalcinkaya.ctf.flag.FlagLocation;
+import com.yalcinkaya.ctf.hotbar.SpecHotbarGUI;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.Kit;
@@ -409,6 +410,7 @@ public class CTFUtil {
         CTFUtil.teleportPlayerMidMap(user);
         Player player = getPlayer(user);
         player.setInvisible(true);
+        CTF.getInstance().getHotbarManager().getSpecHotbarGUI().supply(player);
     }
 
     public static Set<CTFUser> getNearbyUsers(Location location, double radius) {

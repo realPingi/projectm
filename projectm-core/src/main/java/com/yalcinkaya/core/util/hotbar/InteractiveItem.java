@@ -1,6 +1,6 @@
-package com.yalcinkaya.lobby.hotbar;
+package com.yalcinkaya.core.util.hotbar;
 
-import com.yalcinkaya.lobby.user.LobbyUser;
+import com.yalcinkaya.core.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.bukkit.event.inventory.ClickType;
@@ -13,5 +13,5 @@ import java.util.function.BiConsumer;
 public class InteractiveItem {
 
     private ItemStack itemStack;
-    private BiConsumer<LobbyUser, ClickType> action;
+    private BiConsumer<User, ClickType> action;
 }

@@ -27,6 +27,7 @@ public class CTFUser extends User {
     private FastBoard scoreboard;
     private UUID lastDamager;
     private boolean preventCapture;
+    private CTFUser scoreboardSource;
 
     public CTFUser(UUID uuid) {
         super(uuid);

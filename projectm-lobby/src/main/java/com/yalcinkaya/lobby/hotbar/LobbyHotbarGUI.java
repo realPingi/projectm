@@ -1,6 +1,8 @@
 package com.yalcinkaya.lobby.hotbar;
 
 import com.yalcinkaya.core.util.ItemBuilder;
+import com.yalcinkaya.core.util.hotbar.HotbarGUI;
+import com.yalcinkaya.core.util.hotbar.InteractiveItem;
 import com.yalcinkaya.lobby.util.LobbyUtil;
 import com.yalcinkaya.lobby.util.Place;
 import org.bukkit.Material;
@@ -12,7 +14,7 @@ public class LobbyHotbarGUI implements HotbarGUI {
     private final InteractiveItem[] items = new InteractiveItem[9];
 
     private final InteractiveItem kangaItem = new InteractiveItem(ItemBuilder.of(Material.FIREWORK_ROCKET).name("<italic:false><light_purple>Kanga<light_purple>").build(), (user, clickType) -> {
-        Player player = LobbyUtil.getPlayer(user);
+        Player player = LobbyUtil.getPlayer(user.getUuid());
         if (clickType.isRightClick() && player.isOnGround()) {
             player.setVelocity(new Vector(0, 1, 0));
         } else if (clickType.isLeftClick()) {
@@ -21,8 +23,8 @@ public class LobbyHotbarGUI implements HotbarGUI {
         }
     });
 
-    private final InteractiveItem queuesItem = new InteractiveItem(ItemBuilder.of(Material.FLOW_BANNER_PATTERN).name("<italic:false><light_purple>Queues<light_purple>").build(), ((user, clickType) -> LobbyUtil.getPlayer(user).teleport(Place.QUEUES.getLocation())));
-    private final InteractiveItem leaderboardsItem = new InteractiveItem(ItemBuilder.of(Material.DARK_OAK_HANGING_SIGN).name("<italic:false><light_purple>Leaderboards<light_purple>").build(), ((user, clickType) -> LobbyUtil.getPlayer(user).teleport(Place.LEADERBOARDS.getLocation())));
+    private final InteractiveItem queuesItem = new InteractiveItem(ItemBuilder.of(Material.FLOW_BANNER_PATTERN).name("<italic:false><light_purple>Queues<light_purple>").build(), ((user, clickType) -> LobbyUtil.getPlayer(user.getUuid()).teleport(Place.QUEUES.getLocation())));
+    private final InteractiveItem leaderboardsItem = new InteractiveItem(ItemBuilder.of(Material.DARK_OAK_HANGING_SIGN).name("<italic:false><light_purple>Leaderboards<light_purple>").build(), ((user, clickType) -> LobbyUtil.getPlayer(user.getUuid()).teleport(Place.LEADERBOARDS.getLocation())));
 
     public LobbyHotbarGUI() {
         items[3] = queuesItem;

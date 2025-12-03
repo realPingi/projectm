@@ -45,19 +45,13 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
     @Override
     public void idle() {
         CTF ctf = CTF.getInstance();
-        if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.BLUE).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            advance(new PostStage(ctf.getRed(), ctf.getBlue()));
-            return;
-        } else if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            advance(new PostStage(ctf.getBlue(), ctf.getRed()));
-            return;
-        }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
 
             CTFUser ctfUser = CTFUtil.getUser(player);
+            CTFUser source = ctfUser.getScoreboardSource() == null ? ctfUser : ctfUser.getScoreboardSource();
 
-            String kitName = ctfUser.getKit() == null ? "None" : ctfUser.getKit().getName();
+            String kitName = source.getKit() == null ? "None" : source.getKit().getName();
             List<Flag> blueFlags = ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.BLUE).toList();
             List<Flag> redFlags = ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).toList();
 
@@ -68,7 +62,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             Collections.addAll(lines, "",
                     ChatColor.GRAY + "Game Time: " + ChatColor.GOLD + MathUtil.getReadableSeconds(getTime()),
                     ChatColor.GRAY + "Kit: " + ChatColor.GOLD + kitName,
-                    ChatColor.GRAY + "Energy: " + ChatColor.GOLD + MathUtil.roundDouble(ctfUser.getEnergy()),
+                    ChatColor.GRAY + "Energy: " + ChatColor.GOLD + MathUtil.roundDouble(source.getEnergy()),
                     " ",
                     ChatColor.BLUE + "Blue:");
             redFlags.forEach(flag -> lines.add(CTFUtil.printFlagStatus(flag) + " " + CTFUtil.printFlagPosition(flag)));
@@ -89,13 +83,13 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
                 CTFUtil.modifyEnergy(ctfUser, 0.2);
             }
 
-            Kit kit = ctfUser.getKit();
+            Kit kit = source.getKit();
             List<String> actionBarComponents = new ArrayList<>();
             if (kit instanceof ClickKit clickKit) {
                 for (ClickItem clickItem : clickKit.getClickItems()) {
                     String cooldownPrefix = getCooldownPrefix(clickItem.getCooldown());
                     String cooldownNotification = clickItem.getCurrentCooldown() == 0 ?
-                            (!clickItem.hasEnergy(ctfUser) ? "<red>Low Energy" : "Ready") : clickItem.getCurrentCooldown() + "";
+                            (!clickItem.hasEnergy(source) ? "<red>Low Energy" : "Ready") : clickItem.getCurrentCooldown() + "";
                     actionBarComponents.add("<light_purple>" + clickItem.getName() + "<gray> (" + cooldownPrefix + cooldownNotification + "<gray>)");
                 }
             }
@@ -104,7 +98,7 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
                     String cooldownPrefix = getCooldownPrefix(cooldown);
                     EnergyConsumer energyConsumer = cooldown.getEnergyConsumer();
                     String cooldownNotification = cooldown.isActive() ? cooldown.getSecondsLeft() + "" :
-                            (energyConsumer != null && !energyConsumer.hasEnergy(ctfUser) ? "<red>Low Energy" : "Ready");
+                            (energyConsumer != null && !energyConsumer.hasEnergy(source) ? "<red>Low Energy" : "Ready");
                     actionBarComponents.add("<light_purple>" + cooldown.getId() + "<gray> (" + cooldownPrefix + cooldownNotification + "<gray>)");
                 }
             }
@@ -115,7 +109,12 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
                 }
             }
             Audience.audience(player).sendActionBar(MiniMessage.miniMessage().deserialize(String.join("<gray> - ", actionBarComponents)));
+        }
 
+        if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.BLUE).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
+            advance(new PostStage(ctf.getRed(), ctf.getBlue()));
+        } else if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
+            advance(new PostStage(ctf.getBlue(), ctf.getRed()));
         }
     }
 

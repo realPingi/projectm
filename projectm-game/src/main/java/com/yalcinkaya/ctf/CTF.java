@@ -3,6 +3,8 @@ package com.yalcinkaya.ctf;
 import com.yalcinkaya.core.redis.QueueType;
 import com.yalcinkaya.core.util.IntTuple;
 import com.yalcinkaya.ctf.commands.*;
+import com.yalcinkaya.ctf.hotbar.HotbarManager;
+import com.yalcinkaya.ctf.listener.HotbarListener;
 import com.yalcinkaya.ctf.listener.KitListener;
 import com.yalcinkaya.ctf.listener.PlayerListener;
 import com.yalcinkaya.ctf.map.Map;
@@ -35,6 +37,10 @@ public class CTF extends JavaPlugin {
     private final HashMap<IntTuple, Integer> heightMap = new HashMap<>();
     private final PlayerListener playerListener = new PlayerListener(new CTFUserManager());
     private final KitListener kitListener = new KitListener();
+    @Setter
+    private HotbarListener hotbarListener = new HotbarListener();
+    @Setter
+    private HotbarManager hotbarManager = new HotbarManager();
     private final PluginManager pluginManager = getServer().getPluginManager();
     private OkHttpClient http = new OkHttpClient();
     @Setter
@@ -61,6 +67,7 @@ public class CTF extends JavaPlugin {
 
         pluginManager.registerEvents(kitListener, this);
         pluginManager.registerEvents(playerListener, this);
+        pluginManager.registerEvents(hotbarListener, this);
 
         this.getCommand("kit").setExecutor(new KitCommand());
         this.getCommand("setkit").setExecutor(new SetKitCommand());

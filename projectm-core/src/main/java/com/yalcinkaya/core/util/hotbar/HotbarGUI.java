@@ -1,4 +1,4 @@
-package com.yalcinkaya.lobby.hotbar;
+package com.yalcinkaya.core.util.hotbar;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

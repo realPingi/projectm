@@ -1,4 +1,4 @@
-package com.yalcinkaya.lobby.hotbar;
+package com.yalcinkaya.ctf.hotbar;
 
 import com.yalcinkaya.core.user.User;
 import com.yalcinkaya.core.util.hotbar.HotbarGUI;
@@ -12,8 +12,8 @@ import java.util.Set;
 @Getter
 public class HotbarManager {
 
-    private final LobbyHotbarGUI lobbyHotbarGUI = new LobbyHotbarGUI();
-    private final Set<HotbarGUI> hotbarGUIs = Set.of(lobbyHotbarGUI);
+    private final SpecHotbarGUI specHotbarGUI = new SpecHotbarGUI();
+    private final Set<HotbarGUI> hotbarGUIs = Set.of(specHotbarGUI);
 
     public boolean isHotbarGUIItem(ItemStack itemStack) {
         return hotbarGUIs.stream().anyMatch(hotbarGUI -> hotbarGUI.contains(itemStack));

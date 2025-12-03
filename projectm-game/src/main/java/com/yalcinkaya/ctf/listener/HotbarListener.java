@@ -1,8 +1,8 @@
-package com.yalcinkaya.lobby.listener;
+package com.yalcinkaya.ctf.listener;
 
-import com.yalcinkaya.lobby.Lobby;
-import com.yalcinkaya.lobby.hotbar.HotbarManager;
-import com.yalcinkaya.lobby.util.LobbyUtil;
+import com.yalcinkaya.ctf.CTF;
+import com.yalcinkaya.ctf.hotbar.HotbarManager;
+import com.yalcinkaya.ctf.util.CTFUtil;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -18,11 +18,11 @@ public class HotbarListener implements Listener {
 
     @EventHandler
     public void onHotbarInteract(PlayerInteractEvent event) {
-        HotbarManager hotbarManager = Lobby.getInstance().getHotbarManager();
+        HotbarManager hotbarManager = CTF.getInstance().getHotbarManager();
         ItemStack item = event.getItem();
         Action action = event.getAction();
         if (item != null && acceptedActions.contains(action) && hotbarManager.isHotbarGUIItem(item)) {
-            hotbarManager.accept(LobbyUtil.getUser(event.getPlayer()), fromAction(action), item);
+            hotbarManager.accept(CTFUtil.getUser(event.getPlayer()), fromAction(action), item);
             event.setCancelled(true);
         }
     }
