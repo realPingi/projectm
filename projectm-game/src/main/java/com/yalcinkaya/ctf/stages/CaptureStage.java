@@ -112,9 +112,9 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
         }
 
         if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.BLUE).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            advance(new PostStage(ctf.getRed(), ctf.getBlue()));
+            advance(new PostStage(ctf.getRed(), ctf.getBlue(), getTime()));
         } else if (ctf.getMap().getFlags().stream().filter(flag -> flag.getTeam() == TeamColor.RED).allMatch(flag -> flag.getStatus() == CaptureStatus.CAPTURED)) {
-            advance(new PostStage(ctf.getBlue(), ctf.getRed()));
+            advance(new PostStage(ctf.getBlue(), ctf.getRed(), getTime()));
         }
     }
 

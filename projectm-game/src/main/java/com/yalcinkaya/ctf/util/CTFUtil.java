@@ -189,8 +189,7 @@ public class CTFUtil {
     }
 
     public static void broadcastMessageForAll(MessageType messageType, String... strings) {
-        broadcastMessageForTeam(CTF.getInstance().getBlue(), messageType, strings);
-        broadcastMessageForTeam(CTF.getInstance().getRed(), messageType, strings);
+        Bukkit.getOnlinePlayers().forEach(player -> getUser(player).sendMessage(CoreUtil.getMessage(messageType, strings)));
     }
 
     public static void broadcastMessageForTeam(Team team, MessageType messageType, String... strings) {
@@ -198,8 +197,7 @@ public class CTFUtil {
     }
 
     public static void playSoundForAll(Sound sound) {
-        playSoundForTeam(CTF.getInstance().getBlue(), sound);
-        playSoundForTeam(CTF.getInstance().getRed(), sound);
+        Bukkit.getOnlinePlayers().forEach(player -> getUser(player).playSound(sound));
     }
 
     public static void playSoundForTeam(Team team, Sound sound) {
