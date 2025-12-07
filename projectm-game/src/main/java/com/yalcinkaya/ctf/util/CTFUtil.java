@@ -37,6 +37,7 @@ import com.yalcinkaya.ctf.stages.CaptureStage;
 import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -169,8 +170,12 @@ public class CTFUtil {
     }
 
     public static void updateNametag(CTFUser user) {
+        Player player = getPlayer(user);
         NamedTextColor color = user.getTeam() == null ? NamedTextColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? NamedTextColor.BLUE : NamedTextColor.RED);
-        ProjectM.getInstance().getNametagManager().setPlayerNametag(getPlayer(user), color.toString(), color);
+        String teamName = color + "_" + player.getName();
+        Component prefix = Component.text((int) user.getEnergy() + " ", NamedTextColor.GREEN);
+        Component suffix = user.getKit() == null ? null : Component.text(" (" + user.getKit().getName() + ")", NamedTextColor.LIGHT_PURPLE);
+        ProjectM.getInstance().getNametagManager().setPlayerNametag(player, teamName, color, prefix, suffix);
     }
 
     public static void modifyEnergy(CTFUser user, double energy) {

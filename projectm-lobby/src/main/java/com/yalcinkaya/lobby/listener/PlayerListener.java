@@ -33,7 +33,7 @@ public class PlayerListener implements Listener {
         Bukkit.getScheduler().runTaskAsynchronously(Lobby.getInstance(), () -> {
             RedisDataService redisDataService = ProjectM.getInstance().getRedisDataService();
             Rank rank = redisDataService.getRank(player.getUniqueId().toString());
-            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, rank.name(), rank.getColor());
+            ProjectM.getInstance().getNametagManager().setPlayerNametag(player, rank.name(), rank.getColor(), null, null);
             redisDataService.bootstrapAllQueues(player.getUniqueId().toString(), player.getName());
         });
     }

@@ -40,6 +40,7 @@ public class SetKitCommand implements CommandExecutor {
                 CTFKit.setKit(user, kit);
                 CTFUtil.clearPlayer(player);
                 CTFUtil.equipPlayer(player);
+                CTFUtil.updateNametag(user);
                 return true;
             }
 

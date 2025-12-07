@@ -82,6 +82,7 @@ public class PlayerListener implements Listener {
                     }
                     user.sendMessage(CoreUtil.getMessage(MessageType.INFO, "You selected ", kit.getName(), "."));
                     event.getWhoClicked().closeInventory();
+                    CTFUtil.updateNametag(user);
                 } else {
                     user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "This kit is already taken."));
                 }

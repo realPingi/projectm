@@ -54,7 +54,7 @@ public class SetRankCommand implements CommandExecutor {
                         Rank rank = Rank.valueOf(rankName);
                         Player target = Bukkit.getPlayerExact(targetName);
                         if (target != null) {
-                            ProjectM.getInstance().getNametagManager().setPlayerNametag(target, rank.name(), rank.getColor());
+                            ProjectM.getInstance().getNametagManager().setPlayerNametag(target, rank.name(), rank.getColor(), null, null);
                         }
                     }
                 });
