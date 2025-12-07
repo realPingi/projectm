@@ -32,14 +32,14 @@ public class Ascent extends ClickItem implements EnergyConsumer {
 
     private final double length = 0.6;
     private final double width = 2.1;
-    private final int windup = 4;
+    private final int duration = 4;
     private Wings wings;
 
     @Override
     public boolean tryClick(CTFUser activator) {
 
         Player player = CTFUtil.getPlayer(activator);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, windup * 20, 1));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, 3));
         wings = new Wings(player);
         wings.start();
         activator.playSoundForWorld(Sound.ENTITY_ENDER_DRAGON_GROWL);
@@ -52,7 +52,7 @@ public class Ascent extends ClickItem implements EnergyConsumer {
                 wings.cancel();
             }
 
-        }.runTaskLater(CTF.getInstance(), windup * 20);
+        }.runTaskLater(CTF.getInstance(), duration * 20);
 
         return true;
     }

@@ -29,6 +29,7 @@ public class Scissors extends ClickItem implements EnergyConsumer {
     private final Set<Player> cutPlayers = new HashSet<>();
 
     private final int stacksNeeded = 5;
+    private final int damagePerCut = 4;
     @Getter
     private final Counter stacks = new Counter("Stacks", "<blue>", stacksNeeded * 8);
 
@@ -62,7 +63,7 @@ public class Scissors extends ClickItem implements EnergyConsumer {
                     CTFUtil.getNearbyOpponents(activator, vector.toLocation(player.getWorld()), 3).forEach(user -> {
                         Player cutPlayer = CTFUtil.getPlayer(user);
                         if (!cutPlayer.getUniqueId().equals(player.getUniqueId()) && !cutPlayers.contains(cutPlayer)) {
-                            cutPlayer.damage(4);
+                            cutPlayer.damage(damagePerCut * 2);
                             cutPlayers.add(cutPlayer);
                         }
                     });

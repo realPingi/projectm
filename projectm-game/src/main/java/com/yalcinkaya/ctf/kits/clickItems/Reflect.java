@@ -16,7 +16,7 @@ import org.bukkit.inventory.ItemStack;
 public class Reflect extends ClickItem implements EnergyConsumer {
 
     private final ItemStack item = CTFUtil.createIcon("Reflect", Material.DIAMOND);
-    private final int chargesNeeded = 20;
+    private final int chargesNeeded = 30;
     @Getter
     private final Counter charges = new Counter("Charges", "<blue>", chargesNeeded);
     @Getter

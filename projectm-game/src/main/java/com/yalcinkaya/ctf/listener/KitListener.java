@@ -1,5 +1,7 @@
 package com.yalcinkaya.ctf.listener;
 
+import com.yalcinkaya.core.util.CoreUtil;
+import com.yalcinkaya.core.util.MessageType;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.InteractiveClickItem;
@@ -34,7 +36,7 @@ public class KitListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             Player player = event.getPlayer();
             CTFUser user = CTFUtil.getUser(player.getUniqueId());
-            if (!user.isFrozen() && user.getKit() instanceof ClickKit clickKit) {
+            if (user.getKit() instanceof ClickKit clickKit) {
                 ItemStack item = event.getItem();
                 if (item != null) {
                     for (ClickItem clickItem : clickKit.getClickItems()) {
@@ -48,6 +50,10 @@ public class KitListener implements Listener {
                                 return;
                             }
                             if (!clickItem.checkEnergy(user)) {
+                                return;
+                            }
+                            if (user.isFrozen()) {
+                                user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are frozen."));
                                 return;
                             }
                             if (clickItem.tryClick(user)) {
@@ -68,7 +74,7 @@ public class KitListener implements Listener {
         if (event.getRightClicked() instanceof Player rightClicked) {
             Player player = event.getPlayer();
             CTFUser user = CTFUtil.getUser(player.getUniqueId());
-            if (!user.isFrozen() && user.getKit() instanceof ClickKit clickKit) {
+            if (user.getKit() instanceof ClickKit clickKit) {
                 ItemStack item = player.getItemInHand();
                 for (ClickItem clickItem : clickKit.getClickItems()) {
 
@@ -76,16 +82,20 @@ public class KitListener implements Listener {
                         continue;
                     }
 
-                    if (clickItem.getItem().getType() == item.getType()) {
+                    if (interactiveClickItem.getItem().getType() == item.getType()) {
                         event.setCancelled(true);
-                        if (clickItem.isCooldown()) {
-                            clickItem.sendWarning(player);
+                        if (interactiveClickItem.isCooldown()) {
+                            interactiveClickItem.sendWarning(player);
+                            return;
+                        }
+                        if (user.isFrozen()) {
+                            user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "You are frozen."));
                             return;
                         }
                         interactiveClickItem.setClicked(CTFUtil.getUser(rightClicked));
-                        if (clickItem.tryClick(user)) {
-                            clickItem.useCooldown();
-                            user.playSoundForWorld(clickItem.getSound());
+                        if (interactiveClickItem.tryClick(user)) {
+                            interactiveClickItem.useCooldown();
+                            user.playSoundForWorld(interactiveClickItem.getSound());
                         }
                     }
                 }
@@ -221,7 +231,7 @@ public class KitListener implements Listener {
     public void onMove(PlayerMoveEvent event) {
         CTFUser user = CTFUtil.getUser(event.getPlayer().getUniqueId());
         Kit kit = user.getKit();
-        if (!user.isFrozen() && kit != null) {
+        if (kit != null) {
             kit.onMove(event);
         }
     }
@@ -230,7 +240,7 @@ public class KitListener implements Listener {
     public void onLeave(PlayerQuitEvent event) {
         CTFUser user = CTFUtil.getUser(event.getPlayer().getUniqueId());
         Kit kit = user.getKit();
-        if (!user.isFrozen() && kit != null) {
+        if (kit != null) {
             kit.onLeave(event);
         }
     }
@@ -239,7 +249,7 @@ public class KitListener implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         CTFUser user = CTFUtil.getUser(event.getEntity().getUniqueId());
         Kit kit = user.getKit();
-        if (!user.isFrozen() && kit != null) {
+        if (kit != null) {
             kit.onDeath(event);
         }
     }
@@ -248,7 +258,7 @@ public class KitListener implements Listener {
     public void onPickUpItem(PlayerPickupItemEvent event) {
         CTFUser user = CTFUtil.getUser(event.getPlayer().getUniqueId());
         Kit kit = user.getKit();
-        if (!user.isFrozen() && kit != null) {
+        if (kit != null) {
             kit.onPickUpItem(event);
         }
     }
@@ -262,7 +272,7 @@ public class KitListener implements Listener {
 
         CTFUser user = CTFUtil.getUser(shooter.getUniqueId());
         Kit kit = user.getKit();
-        if (!user.isFrozen() && kit != null) {
+        if (kit != null) {
             kit.onProjectileLaunch(event);
         }
     }
