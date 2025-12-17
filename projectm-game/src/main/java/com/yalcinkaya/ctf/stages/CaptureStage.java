@@ -82,6 +82,8 @@ public class CaptureStage extends CTFStage<CaptureStageListener> {
             if (getTimer() % 20 == 0) {
                 CTFUtil.modifyEnergy(ctfUser, 0.2);
                 CTFUtil.updateNametag(ctfUser);
+                CTF.getInstance().getPlayerListener().getUserManager().getSpecs().forEach(spec -> player.hidePlayer(CTF.getInstance(), CTFUtil.getPlayer(spec)));
+                CTF.getInstance().getPlayerListener().getUserManager().getIngame().forEach(ingame -> player.showPlayer(CTF.getInstance(), CTFUtil.getPlayer(ingame)));
             }
 
             if (CTFUtil.isInFlagRegion(player.getLocation()) && getTimer() % 20 == 0) {

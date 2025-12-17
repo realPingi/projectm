@@ -412,7 +412,6 @@ public class CTFUtil {
     public static void setupSpectator(CTFUser user) {
         CTFUtil.teleportPlayerMidMap(user);
         Player player = getPlayer(user);
-        player.setInvisible(true);
         CTF.getInstance().getHotbarManager().getSpecHotbarGUI().supply(player);
     }
 

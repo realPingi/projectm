@@ -34,28 +34,29 @@ public class SpecHotbarGUI implements HotbarGUI {
 
             Player player = CTFUtil.getPlayer(spec.getUuid());
             Player target = CTFUtil.getPlayer(user.getUuid());
+            CTFUser specUser = CTFUtil.getUser(spec.getUuid());
 
             if (clickType.isRightClick()) {
                 CTF.getInstance().getCameras().stream().filter(c -> c.isAttached(player)).findFirst().ifPresent(current -> current.detach(player));
 
                 if (target.getUniqueId().equals(player.getUniqueId())) {
-                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Can't attach to your own camera."));
+                    specUser.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "Can't attach to your own camera."));
                     return;
                 }
 
                 PlayerCamera camera = CTF.getInstance().getCameras().stream().filter(c -> c.getObservedId().equals(target.getUniqueId())).findFirst().orElse(null);
                 if (camera == null) {
-                    user.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "No camera to attach to."));
+                    specUser.sendMessage(CoreUtil.getMessage(MessageType.WARNING, "No camera to attach to."));
                     return;
                 }
 
                 camera.attach(player);
-                user.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Attached."));
+                specUser.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Attached."));
                 return;
             }
 
-            CTFUtil.getUser(spec.getUuid()).setScoreboardSource(user);
-            spec.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Set ", target.getName(), " as scoreboard source."));
+            specUser.setScoreboardSource(user);
+            specUser.sendMessage(CoreUtil.getMessage(MessageType.SUCCESS, "Set ", target.getName(), " as scoreboard source."));
 
         }));
         return item;
