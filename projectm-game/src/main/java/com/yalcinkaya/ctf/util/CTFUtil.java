@@ -33,7 +33,9 @@ import com.yalcinkaya.ctf.hotbar.SpecHotbarGUI;
 import com.yalcinkaya.ctf.kit.ClickItem;
 import com.yalcinkaya.ctf.kit.ClickKit;
 import com.yalcinkaya.ctf.kit.Kit;
+import com.yalcinkaya.ctf.stages.CTFStage;
 import com.yalcinkaya.ctf.stages.CaptureStage;
+import com.yalcinkaya.ctf.stages.PreStage;
 import com.yalcinkaya.ctf.team.Team;
 import com.yalcinkaya.ctf.team.TeamColor;
 import com.yalcinkaya.ctf.user.CTFUser;
@@ -170,11 +172,12 @@ public class CTFUtil {
     }
 
     public static void updateNametag(CTFUser user) {
+        boolean prestage = CTF.getInstance().getCurrentStage() instanceof PreStage;
         Player player = getPlayer(user);
         NamedTextColor color = user.getTeam() == null ? NamedTextColor.GRAY : (user.getTeam().getColor() == TeamColor.BLUE ? NamedTextColor.BLUE : NamedTextColor.RED);
         String teamName = color + "_" + player.getName();
         Component prefix = Component.text((int) user.getEnergy() + " ", NamedTextColor.GREEN);
-        Component suffix = user.getKit() == null ? null : Component.text(" (" + user.getKit().getName() + ")", NamedTextColor.LIGHT_PURPLE);
+        Component suffix = (prestage || user.getKit() == null) ? null : Component.text(" (" + user.getKit().getName() + ")", NamedTextColor.LIGHT_PURPLE);
         ProjectM.getInstance().getNametagManager().setPlayerNametag(player, teamName, color, prefix, suffix);
     }
 

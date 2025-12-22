@@ -3,8 +3,6 @@ package com.yalcinkaya.ctf.stages;
 import com.google.gson.Gson;
 import com.yalcinkaya.core.util.MathUtil;
 import com.yalcinkaya.ctf.CTF;
-import com.yalcinkaya.ctf.hotbar.HotbarManager;
-import com.yalcinkaya.ctf.listener.HotbarListener;
 import com.yalcinkaya.ctf.listener.PreStageListener;
 import com.yalcinkaya.ctf.net.TeamConfigHolder;
 import com.yalcinkaya.ctf.team.Team;
