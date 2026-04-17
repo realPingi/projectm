@@ -12,8 +12,8 @@ const HOST  = process.env.ORCH_HOST || "0.0.0.0";
 const DOCKER = process.env.DOCKER_BIN || "/usr/bin/docker";
 
 // FIX: Ports auf 25571 erhöht (6 Ports) und MAX_TOTAL auf 6
-const PORT_MIN = 25566, PORT_MAX = 25571;
-const MAX_TOTAL = 6, MATCH_CAP = 4, WARM_CAP = 2;
+const PORT_MIN = 25566, PORT_MAX = 25570;
+const MAX_TOTAL = 4, MATCH_CAP = 2, WARM_CAP = 2;
 
 const MANAGED_LABEL = "projectm.managed=true";
 const GAME_IMAGE = process.env.GAME_IMAGE || "realpingi/game:ready";
