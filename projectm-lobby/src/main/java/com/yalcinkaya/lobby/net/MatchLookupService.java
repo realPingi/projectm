@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 public class MatchLookupService {
 
-    private final String orchestratorUrl = "http://91.98.203.124:4000";
+    private final String orchestratorUrl = "http://109.205.181.172:4000";
     private final OkHttpClient http;
     private final Gson gson = new Gson();
 

@@ -31,7 +31,7 @@ public class MatchStarter {
             .callTimeout(Duration.ofSeconds(65))
             .build();
 
-    private final String ORCHESTRATOR_URL = "http://91.98.203.124:4000";
+    private final String ORCHESTRATOR_URL = "http://109.205.181.172:4000";
 
     private static String orNull(String s) {
         return s == null ? "-" : s;
